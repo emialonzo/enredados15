@@ -10,3 +10,6 @@ From 192.168.1.42 icmp_seq=3 Destination Host Unreachable
 --- 192.168.1.14 ping statistics ---
 4 packets transmitted, 0 received, +3 errors, 100% packet loss, time 3014ms
 pipe 3
+
+
+estoy haciendo un cambio para probar
