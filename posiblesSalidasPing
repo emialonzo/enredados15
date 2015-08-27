@@ -1,0 +1,12 @@
+$ ping pasdfnsdg.com
+ping: unknown host pasdfnsdg.com
+
+$ ping 192.168.1.14
+PING 192.168.1.14 (192.168.1.14) 56(84) bytes of data.
+From 192.168.1.42 icmp_seq=1 Destination Host Unreachable
+From 192.168.1.42 icmp_seq=2 Destination Host Unreachable
+From 192.168.1.42 icmp_seq=3 Destination Host Unreachable
+^C
+--- 192.168.1.14 ping statistics ---
+4 packets transmitted, 0 received, +3 errors, 100% packet loss, time 3014ms
+pipe 3
