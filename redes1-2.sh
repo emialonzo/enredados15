@@ -1,9 +1,14 @@
 #!/bin/bash
 
+error_msg() { printf "\033[31m%s\033[0m\n" "$*"; }
+notice_msg() { printf "\033[33m%s\033[0m " "$*"; }
+done_msg() { printf "\033[32m%s\033[0m\n" "$*"; }
+DONE_MSG=$(done_msg done)
+
 # inicializo
 if test $# -ne 2
 then
-  echo 'Uso: ejercicio1-2.sh host1 host2 [count]'
+  error_msg 'Uso: ejercicio1-2.sh host1 host2 [count]'
   exit
 fi
 
@@ -41,7 +46,7 @@ echo El RTT promedio para el host 2 es $hostDosInfo ms
 echo "**********************************"
 if test 1 -eq "$(echo "${hostUnoInfo} < ${hostDosInfo}" | bc)"
 then
-  echo "## $hostUno tiene el mejor tiempo de respuesta ##"
+  done_msg "## $hostUno tiene el mejor tiempo de respuesta ##"
 else
-  echo "## $hostDos tiene el mejor tiempo de respuesta ##"
+  done_msg "## $hostDos tiene el mejor tiempo de respuesta ##"
 fi
