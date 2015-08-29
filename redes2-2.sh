@@ -6,7 +6,10 @@ then
   exit
 fi
 
+#Esta es la variable que define el tamaño de un paso significativo
 umbral="10.0"
+
+
 host=$1
 
 trace=$(traceroute $host | sed '1d')
@@ -40,6 +43,9 @@ while IFS= read -r line; do
 
 		if [ $condUmbral = '1' ]; then
 			echo "En el hop $cont se supero el umbral" 
+			servidores=$(echo $line | grep "\S\{1,\} ([0-9]\{1,3\}.[0-9]\{1,3\}.[0-9]\{1,3\}.[0-9]\{1,3\})" -o)
+			echo "El/Los host(s) involucrado(s) son:"
+			echo $servidores
 		fi
 
 		ultPaso=$promedio
