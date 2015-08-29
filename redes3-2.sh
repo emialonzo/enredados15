@@ -22,12 +22,17 @@ hostUno=$1
 
 salida=`dig $hostUno ns `
 salida2=`echo "$salida" | grep ";; flags"`
-notice_msg moco "$salida"
+# notice_msg moco "$salida"
 respuesta=`echo "$salida2" | cut -d',' -f2 | cut -d':' -f2`
 if test $respuesta -eq 0
 then
-	error_msg no hay respuesta
+	notice_msg no hay respuesta directa, consultamos al dominio
+	domain=`echo "$salida" | grep SOA | cut -d'	' -f1`
+	done_msg Nombre de dominio $domain
+	dig $domain ns +short
 else
-	done_msg un monton de respuestas
+	done_msg Hay $respuesta servidorres autoritativos
+	echo "----------"
+	done_msg "`dig $hostUno ns +short`"
 fi
-done_msg Oinc!! $1
+# done_msg Oinc!! $1
