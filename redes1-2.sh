@@ -6,7 +6,7 @@ done_msg() { printf "\033[32m%s\033[0m\n" "$*"; }
 DONE_MSG=$(done_msg done)
 
 # inicializo
-if test $# -ne 2
+if test $# -lt 2
 then
   error_msg 'Uso: ejercicio1-2.sh host1 host2 [count]'
   exit
@@ -15,6 +15,12 @@ fi
 hostUno=$1
 hostDos=$2
 count=1
+
+if test $# -eq 3
+then
+  count=$3
+fi
+
 
 echo "**********************************"
 echo Debug info:
