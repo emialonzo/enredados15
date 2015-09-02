@@ -57,7 +57,28 @@ fi
 echo El RTT promedio para $hostUno es $hostUnoInfo ms
 echo El RTT promedio para $hostDos es $hostDosInfo ms
 
+
 echo "**********************************"
+if test "$(echo "${hostUnoInfo} + ${hostDosInfo}" == 0| bc)" -eq 1
+then
+    error_msg los dos eran 0
+    exit
+fi
+
+if test "$(echo "${hostUnoInfo}" == 0 | bc)" -eq 1
+then
+    error_msg $hostUno dio tiempo 0
+    done_msg "## $hostDos tiene el mejor tiempo de respuesta ##"
+    exit
+fi
+
+if test "$(echo "${hostDosInfo}" == 0 | bc)" -eq 1
+then
+    error_msg $hostDos dio tiempo 0
+    done_msg "## $hostUno tiene el mejor tiempo de respuesta ##"
+    exit
+fi
+
 if test 1 -eq "$(echo "${hostUnoInfo} < ${hostDosInfo}" | bc)"
 then
   done_msg "## $hostUno tiene el mejor tiempo de respuesta ##"
