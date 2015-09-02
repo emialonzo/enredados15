@@ -4,6 +4,8 @@ import re
 import sys
 import time
 
+DEBUG=0
+
 ## Funciones
 def  max_ping(output):
     patron = re.compile('(?P<info>.*)=(\s)(?P<min>[^/]+)/(?P<promedio>[^/]+)/(?P<max>[^/]+)/([^/]+)')
@@ -32,18 +34,9 @@ def ejecutarPing(host, pingCount="1"):
         # output = subprocess.check_output(["smartctl", "-A", "/dev/sda2"])
     except Exception as e:
         output = e.output
-        # print "<" + output + ">"
-        # if output == "":
-        #     output = "ping: unknown host " + host
-    print "host:" + host
-    print "Ping:" + output.strip()
-    # print ":::::::"
-    # print output
-    # print ":::::::"
-    # patron = re.compile('(?P<info>.*)=(\s)(?P<min>[^/]+)/(?P<promedio>[^/]+)/(?P<max>[^/]+)/([^/]+)')
-    # matcher = patron.search(output)
-    # print "Max:::" + max_ping(output)
-    # print "Min:::" + dic_ping(output)['min']
+
+    if DEBUG:
+        print "DEBUG::{host:" + host + ",Ping:" + output.split('\n')[-2] + "}"
     return output
 
 
@@ -51,7 +44,7 @@ def errorPing(output):
     patron = re.compile('(ping: unknown host(?P<desconocido>.*))|(From (?P<inalcanzable>.*) icmp(.*)Destination Host Unreachable)')
     matcher = patron.search(output)
     if(matcher):
-        print "HEY!! ERROR"
+        # print "HEY!! ERROR"
         return (matcher.group('desconocido'),matcher.group('inalcanzable'))
     else:
         return (None,None)
@@ -81,19 +74,32 @@ def procesarErrores(salida):
 cantParam = len(sys.argv)
 if(cantParam<2):
     print 'Error'
-    print 'Uso: python ' + sys.argv[0] + ' host1 host2 [count]'
+    print 'Uso: python ' + sys.argv[0] + ' host1 host2 [count] [umbral]'
     exit(1)
+
+#parametros por defecto
+pingCount='3'
+umbral=50.00
 
 #Traigo parametros
 hostUno = sys.argv[1]
 hostDos = sys.argv[2]
-pingCount='3'
-umbral=50.00
 if cantParam>3:
     pingCount = sys.argv[3]
 
 if cantParam>4:
     umbral = float(sys.argv[4])
+
+if cantParam>5:
+    DEBUG = int(sys.argv[5])
+
+
+print " -- Comenzando el monitoreo --"
+print "Hosts: " + hostUno + " y " + hostDos
+print "Ping por iteracion:" + pingCount
+print "Umbral: " + str(umbral) + "ms."
+print "-------------------------------"
+
 
 while True:
     try:
@@ -103,13 +109,5 @@ while True:
         procesarErrores(salidaDos)
     except Exception as e:
         print "Error: " + e.message
-        print 'Cerrando'
-        exit(1)
-
-
-salida=ejecutarPing(hostUno,pingCount)
-(desconocido,inalcanzable)=errorPing(salida)
-if desconocido:
-    print 'Error: Url desconocida ' + desconocido
-if inalcanzable:
-    print 'Error: Destino inalcanzable ' + inalcanzable
+        # print 'Cerrando'
+        # exit(1)
