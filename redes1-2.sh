@@ -6,7 +6,7 @@ done_msg() { printf "\033[32m%s\033[0m\n" "$*"; }
 DONE_MSG=$(done_msg done)
 
 # inicializo
-if test $# -ne 2
+if test $# -lt 2
 then
   error_msg 'Uso: ejercicio1-2.sh host1 host2 [count]'
   exit
@@ -16,34 +16,69 @@ hostUno=$1
 hostDos=$2
 count=1
 
-echo "**********************************"
-echo Debug info:
+if test $# -eq 3
+then
+  count=$3
+fi
+
+
+
+echo "**  Iniciado script para determinar host con mejor tiempo de respuesta **"
 echo "  Host1: $hostUno"
 echo "  Host2: $hostDos"
-echo "  Cantidad parametros: $#"
 echo "**********************************"
 
 
 # ejecucion de comandos
 comando="ping -c $count $hostUno | grep max | cut -d'/' -f6"
-echo Ejecutando host 1 con el comando:
-echo "   $comando"
+# echo Ejecutando host 1 con el comando:
+# echo "   $comando"
 hostUnoInfo=`ping -c $count $hostUno | grep max | cut -d'/' -f6`
-echo Fin ejecucion ping host 1
+if test ! "$hostUnoInfo"
+then
+    hostUnoInfo=0
+fi
+# echo Fin ejecucion ping host 1
 
 
 comando="ping -c $count $hostDos | grep max | cut -d'/' -f6"
-echo Ejecutando host 2 con el comando:
-echo "   $comando"
+# echo Ejecutando host 2 con el comando:
+# echo "   $comando"
 hostDosInfo=`ping -c $count $hostDos | grep max | cut -d'/' -f6`
-echo Fin ejecucion ping host 2
+# if echo $hostDosInfo  | grep -q '[0-9]\+'
+if test ! "$hostDosInfo"
+then
+    hostDosInfo=0
+fi
+# echo Fin ejecucion ping host 2
+# echo "**********************************"
 
-echo "**********************************"
 # Resultados
-echo El RTT promedio para el host 1 es $hostUnoInfo ms
-echo El RTT promedio para el host 2 es $hostDosInfo ms
+echo El RTT promedio para $hostUno es $hostUnoInfo ms
+echo El RTT promedio para $hostDos es $hostDosInfo ms
+
 
 echo "**********************************"
+if test "$(echo "${hostUnoInfo} + ${hostDosInfo}" == 0| bc)" -eq 1
+then
+    error_msg los dos eran 0
+    exit
+fi
+
+if test "$(echo "${hostUnoInfo}" == 0 | bc)" -eq 1
+then
+    error_msg $hostUno dio tiempo 0
+    done_msg "## $hostDos tiene el mejor tiempo de respuesta ##"
+    exit
+fi
+
+if test "$(echo "${hostDosInfo}" == 0 | bc)" -eq 1
+then
+    error_msg $hostDos dio tiempo 0
+    done_msg "## $hostUno tiene el mejor tiempo de respuesta ##"
+    exit
+fi
+
 if test 1 -eq "$(echo "${hostUnoInfo} < ${hostDosInfo}" | bc)"
 then
   done_msg "## $hostUno tiene el mejor tiempo de respuesta ##"
