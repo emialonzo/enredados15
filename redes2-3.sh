@@ -1,3 +1,4 @@
+#!/bin/sh
 if test $# -ne 1
 then
   echo 'Uso: ejercicio2-2.sh host1'
@@ -27,5 +28,3 @@ if [ $hostEncontrado -eq 0 ]; then
 	echo "El traceroute fue:"
 	echo "$trace"
 fi
-
-
