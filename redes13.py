@@ -58,7 +58,7 @@ def mejorPromedioq(salida1, salida2):
         return 2
 
 
-def procesarErrores(salida):
+def procesarErrores(host, salida):
     (desconocido,inalcanzable)=errorPing(salida)
     if desconocido:
         print 'Error: Url desconocida ' + desconocido
@@ -66,7 +66,7 @@ def procesarErrores(salida):
         print 'Error: Destino inalcanzable ' + inalcanzable
     dictPing = dic_ping(salida)
     if float(dic_ping(salida)['max']) > umbral:
-        raise Exception('Se ha superado el umbral de tiempo de ' + str(umbral) +'ms')
+        raise Exception(host + ' ha superado el umbral de tiempo de ' + str(umbral) +'ms')
 
 
 
@@ -104,10 +104,11 @@ print "-------------------------------"
 while True:
     try:
         salidaUno=ejecutarPing(hostUno,pingCount)
-        procesarErrores(salidaUno)
-        salidaDos=ejecutarPing(hostDos,pingCount)
-        procesarErrores(salidaDos)
+        procesarErrores(hostUno, salidaUno)
     except Exception as e:
         print "Error: " + e.message
-        # print 'Cerrando'
-        # exit(1)
+    try:
+        salidaDos=ejecutarPing(hostDos,pingCount)
+        procesarErrores(hostDos, salidaDos)
+    except Exception as e:
+        print "Error: " + e.message
