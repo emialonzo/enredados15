@@ -62,11 +62,14 @@ def procesarErrores(host, salida):
     (desconocido,inalcanzable)=errorPing(salida)
     if desconocido:
         print 'Error: Url desconocida ' + desconocido
-    if inalcanzable:
-        print 'Error: Destino inalcanzable ' + inalcanzable
-    dictPing = dic_ping(salida)
-    if float(dic_ping(salida)['max']) > umbral:
-        raise Exception(host + ' ha superado el umbral de tiempo de ' + str(umbral) +'ms')
+    else:
+        if inalcanzable:
+            print 'Error: Destino inalcanzable ' + inalcanzable
+            dictPing = dic_ping(salida)
+        else:
+            if float(dic_ping(salida)['max']) > umbral:
+                raise Exception(host + ' ha superado el umbral de tiempo de ' + str(umbral) +'ms')
+
 
 
 
