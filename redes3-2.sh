@@ -13,7 +13,7 @@ DONE_MSG=$(done_msg done)
 # inicializo
 if test $# -eq 0
 then
-  error_msg 'Uso: ejercicio1-2.sh host1 [count]'
+  error_msg 'Uso: ejercicio3-2.sh host'
   exit
 fi
 hostUno=$1

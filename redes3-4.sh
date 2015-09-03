@@ -44,16 +44,18 @@ fi
 # notice_msg "$auto"
 servidorAutoritativo=`echo "$auto" | sed -n 1p`
 
-salida=`dig @$servidorAutoritativo $hostUno mx +short`
-debug_msg "$salida"
+hostMail=`dig @$servidorAutoritativo $hostUno mx +short`
+debug_msg "$hostMail"
 echo "--------------"
-salida2=`dig @$servidorAutoritativo $hostUno mx +short | cut -d" " -f2  | xargs dig +short`
-debug_msg "$salida2"
+ipMails=`echo "$hostMail" | cut -d" " -f2  | xargs dig +short`
+debug_msg "$ipMails"
 
 
-if echo "$salida2"  | grep -q $IP
+if echo "$ipMails"  | grep -q $IP
 then
-    done_msg "eureca! :)"
+    # done_msg "eureca! :)"
+    echo true
 else
-    error_msg "no estaba :("
+    # error_msg "no estaba :("
+    echo false
 fi
