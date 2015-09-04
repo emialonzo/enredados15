@@ -1,0 +1,57 @@
+ -- Comenzando el monitoreo --
+Hosts: emialonzo.sytes.net y facebook.com
+Ping por iteracion:5
+Umbral: 40.0ms.
+-------------------------------
+Error: facebook.com ha superado el umbral de tiempo de 40.0ms
+Error: facebook.com ha superado el umbral de tiempo de 40.0ms
+Error: facebook.com ha superado el umbral de tiempo de 40.0ms
+ -- Comenzando el monitoreo --
+Hosts: emialonzo.sytes.net y unawebquenoexisteporquelaestoyinventando.net
+Ping por iteracion:2
+Umbral: 40.0ms.
+-------------------------------
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: emialonzo.sytes.net ha superado el umbral de tiempo de 40.0ms
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: emialonzo.sytes.net ha superado el umbral de tiempo de 40.0ms
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+Error: Url desconocida  unawebquenoexisteporquelaestoyinventando.net
+ -- Comenzando el monitoreo --
+Hosts: google.com y 172.16.104.216
+Ping por iteracion:2
+Umbral: 4.0ms.
+-------------------------------
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48
+Error: google.com ha superado el umbral de tiempo de 4.0ms
+Error: Destino inalcanzable 172.16.104.48
+Error: google.com ha superado el umbral de tiempo de 4.0ms
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48
+Error: google.com ha superado el umbral de tiempo de 4.0ms
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48
+Error: google.com ha superado el umbral de tiempo de 4.0ms
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48
+Error: google.com ha superado el umbral de tiempo de 4.0ms
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48
+Error: Destino inalcanzable 172.16.104.48

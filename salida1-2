@@ -1,0 +1,16 @@
+**  Iniciado script para determinar host con mejor tiempo de respuesta **
+  Host1: google.com
+  Host2: emialonzo.sytes.net
+**********************************
+El RTT promedio para google.com es 2.073 ms
+El RTT promedio para emialonzo.sytes.net es 5.499 ms
+**********************************
+[32m## google.com tiene el mejor tiempo de respuesta ##[0m
+**  Iniciado script para determinar host con mejor tiempo de respuesta **
+  Host1: datauy.org
+  Host2: 180.com.uy
+**********************************
+El RTT promedio para datauy.org es 205.909 ms
+El RTT promedio para 180.com.uy es 183.504 ms
+**********************************
+[32m## 180.com.uy tiene el mejor tiempo de respuesta ##[0m
