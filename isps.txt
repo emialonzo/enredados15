@@ -4,3 +4,4 @@ Cogent,congentco.com
 Tata Comunications,tata
 TeliaSonera International Carrier,telia.net
 Century Link,savvis.net
+AS6939 Hurricane Electric Inc.,he.net

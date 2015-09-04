@@ -65,12 +65,18 @@ def procesarErrores(host, salida):
     else:
         if inalcanzable:
             print 'Error: Destino inalcanzable ' + inalcanzable
-            dictPing = dic_ping(salida)
         else:
-            if float(dic_ping(salida)['max']) > umbral:
+            dictPing = dic_ping(salida)
+            if DEBUG:
+                print 'DEBUG::->'    + host + " | " + str(dictPing)
+            ## intento castear a pto flotante
+            try:
+                maximo=float(dic_ping(salida)['max'])
+            except Exception as e:
+                raise Exception("No se han recibido paquete de respuesta")
+                return
+            if maximo > umbral:
                 raise Exception(host + ' ha superado el umbral de tiempo de ' + str(umbral) +'ms')
-
-
 
 
 ######################## MAIN #####################
