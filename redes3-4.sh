@@ -33,23 +33,24 @@ then
 	# como no hay respuesta, debo buscarla en el dominio
 	# notice_msg no hay respuesta directa, consultamos al dominio
 	domain=`echo "$salida" | grep SOA | cut -d'	' -f1`
-	# done_msg Nombre de dominio $domain
 	auto=`dig $domain ns +short`
+    hostUno=$domain
 else
 	#imprimo todas las respuestas obtenidas
 	# done_msg Hay $respuesta servidorres autoritativos
-	# echo "----------"
     auto=`dig $hostUno ns +short`
 fi
 # notice_msg "$auto"
 servidorAutoritativo=`echo "$auto" | sed -n 1p`
 
 hostMail=`dig @$servidorAutoritativo $hostUno mx +short`
-debug_msg "$hostMail"
-echo "--------------"
+done_msg "Servidores de mails"
+debug_msg "`echo "$hostMail" | cut -d' ' -f2`"
+
+done_msg "Ip de servidores de mails"
 ipMails=`echo "$hostMail" | cut -d" " -f2  | xargs dig +short`
 debug_msg "$ipMails"
-
+echo "------------"
 
 if echo "$ipMails"  | grep -q $IP
 then
