@@ -1,0 +1,13 @@
+$ ./redes2-2.sh www.rediris.es 90
+En el hop 6 se supero el umbral
+El/Los host(s) involucrado(s) son:
+ibe2agu1-0-0-0-3.antel.net.uy (200.40.16.122)
+En el hop 9 se supero el umbral
+El/Los host(s) involucrado(s) son:
+ae-116-3502.bar1.Madrid2.Level3.net (4.69.158.194) ae-118-3504.bar1.Madrid2.Level3.net (4.69.158.202) ae-117-3503.bar1.Madrid2.Level3.net (4.69.158.198)
+$ ./redes2-2.sh emialonzo.sytes.net 40
+$ ./redes2-2.sh emialonzo.sytes.net 10
+$ ./redes2-2.sh emialonzo.sytes.net 4
+En el hop 3 se supero el umbral
+El/Los host(s) involucrado(s) son:
+asr3agu1-3-2-1-1607.agg.antel.net.uy (200.40.177.46)

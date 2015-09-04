@@ -1,0 +1,39 @@
+$ ./redes2-3.sh
+Uso: ejercicio2-2.sh host1
+$ ./redes2-3.sh datauy.org
+El traceroute pasa por un host del ISP AS6939 Hurricane Electric Inc.
+$ ./redes2-3.sh www.sublimetext.com
+El traceroute pasa por un host del ISP NTT Communications
+$ ./redes2-3.sh google.com
+No se ha encontrado ningun ISP del archivo isps.txt
+El traceroute fue:
+ 1  172.16.0.1 (172.16.0.1)  1.580 ms  1.532 ms  1.508 ms
+ 2  * * *
+ 3  asr3agu1-3-2-1-1607.agg.antel.net.uy (200.40.177.46)  4.795 ms  4.776 ms  4.761 ms
+ 4  iag2agu1-1-2-1607.antel.net.uy (200.40.177.45)  4.610 ms  4.641 ms  4.625 ms
+ 5  ibb2agu1-7-1.antel.net.uy (200.40.18.225)  4.627 ms  4.601 ms  4.593 ms
+ 6  ibe2agu1-0-0-0-3.antel.net.uy (200.40.16.122)  6.314 ms  7.193 ms  7.090 ms
+ 7  cbb2agu1-be150.antel.net.uy (200.40.78.1)  7.061 ms cbb2tia1-be200.antel.net.uy (200.40.78.5)  3.292 ms cbb2agu1-be150.antel.net.uy (200.40.78.1)  6.884 ms
+ 8  ibb2cor4-0-0-0-16.antel.net.uy (200.40.161.22)  6.017 ms  6.600 ms  6.618 ms
+ 9  isv2cor1-1-52.antel.net.uy (200.40.161.23)  3.189 ms  3.175 ms  3.163 ms
+10  * * *
+11  * * *
+12  * * *
+13  * * *
+14  * * *
+15  * * *
+16  * * *
+17  * * *
+18  * * *
+19  * * *
+20  * * *
+21  * * *
+22  * * *
+23  * * *
+24  * * *
+25  * * *
+26  * * *
+27  * * *
+28  * * *
+29  * * *
+30  * * *
