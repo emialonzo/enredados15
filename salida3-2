@@ -1,0 +1,13 @@
+[31mUso: ejercicio3-2.sh host[0m
+[32mHay 4 servidorres autoritativos[0m
+----------
+[32mns1.google.com.
+ns2.google.com.
+ns4.google.com.
+ns3.google.com.[0m
+[33mno hay respuesta directa, consultamos al dominio[0m
+[32mNombre de dominio google.com.[0m
+ns3.google.com.
+ns4.google.com.
+ns2.google.com.
+ns1.google.com.
