@@ -40,6 +40,12 @@ int main(int argc, char *argv[]) {
 	string ip_servidor(IP_SERVIDOR);
 	int puerto_servidor(PUERTO_SERVIDOR);
 
+	if (argc < 2) {
+		cerr << "\033[1;31mFaltan parametros.\033[0m" << endl;
+		cerr << "\033[1;31mUso: ./ClienteUDP <nombre usuario> [puerto_servidor]\033[0m" << endl;
+		exit(1);
+	}
+
 	if (argc == 2) {
 		cout << "Argumentos: " << argv[0] << " - " << argv[1] << endl;
 		usuario = argv[1];
@@ -49,17 +55,18 @@ int main(int argc, char *argv[]) {
 		usuario = argv[1];
 		puerto_cliente = atoi(argv[2]);
 	}
+
 	cout << "Nombre Usuario: " << usuario << endl;
 	cout << "IP Usuario: " << ip_cliente << endl;
 	cout << "Puerto: " << puerto_cliente << endl;
 	cout << "IP Multicast: " << ip_multicast << endl;
 	cout << "Puerto Multicast: " << puerto_multicast << endl;
 
-	//sock_multicast = socket(domain, type, protocol)
+	// sock_multicast = socket(domain, type, protocol)
 	// domain = AF_INET (IP address family)
-	//type = SOCK_DGRAM (datagram service)
-	//protocol = 0 (variaciones del protocolo)
-	//Creo el socket para usar UDP y datagramas
+	// type = SOCK_DGRAM (datagram service)
+	// protocol = 0 (variaciones del protocolo)
+	// Creo el socket para usar UDP y datagramas
 	int socket_cliente = socket(AF_INET, SOCK_DGRAM, 0);
 	if (socket_cliente < 0) {
 		perror("No se pudo crear el socket");
@@ -100,8 +107,6 @@ int main(int argc, char *argv[]) {
 	  bzero(buffer,MSGBUFSIZE);
 	  fgets(buffer,MSGBUFSIZE,stdin);
 
-		printf("este es el mensaje que le envio al servidor: %s\n",buffer);
-
 		struct sockaddr_in addr_servidor;
 	  memset((char *)&addr_servidor, 0, sizeof(addr_servidor));
 	  addr_servidor.sin_family = AF_INET;
@@ -111,7 +116,6 @@ int main(int argc, char *argv[]) {
 		int result = sendto(socket_cliente, buffer, strlen(buffer), 0, (struct sockaddr *)&addr_servidor, sizeof(addr_servidor));
 
 	  if (result < 0) {
-	    cout << "algo no salio bien cuando mandamos el mensaje." << endl;
 	    perror("algo no salio bien cuando mandamos el mensaje.");
 	    exit(1);
 	  } else {
