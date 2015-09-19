@@ -92,3 +92,9 @@ int main (int argc, char *argv[]) {
   close(socket_servidor);
   cout << "Se cerro el socket" << endl;
 }
+
+
+
+
+
+//a
