@@ -82,7 +82,7 @@ void * receptorMensajes(void*) {
         i++;
 
     }
-    
+
     return NULL;
 }
 
@@ -90,10 +90,10 @@ void * receptorMensajes(void*) {
 //prototipo
 
 void sendToServer(char* mensaje) {
-    cout << "Enviando:::" << mensaje << ":::" << endl;
+    cout << "Enviando: ::" << mensaje << ":::" << endl;
     unsigned int seconds = 2;
     sleep(seconds);
-    cout << "Mensaje enviado" << endl;
+    cout << "Mensaje enviado ✓" << endl;
 }
 
 int consola() {

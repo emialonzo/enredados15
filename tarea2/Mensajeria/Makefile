@@ -3,9 +3,10 @@ FLAGS = -lpthread
 
 
 compilar: servidor cliente
+	$(info Se han compilado el servidor y el cliente ✓)
 
-servidor:
+servidor: Servidor.cpp
 	$(CC) Servidor.cpp $(FLAGS) -o servidor
 
-cliente:
+cliente: Cliente.cpp
 		$(CC) Cliente.cpp $(FLAGS) -o cliente
