@@ -55,16 +55,21 @@ Cliente* getCliente(char* ip){
 
 char* getConected(){
         char* retStr = new char[MAX_LARGO_MENSAJE];
-        // for(int i=0; i < servidor->cantClientes;i++){
-        //
-        // }
         MapClientes::iterator it = Clientes->begin();
-        while(it != Clientes->end()) {
-                //FIXME arreglar el ultimo pipe
-                strcat(retStr, it->second->nick);
-                strcat(retStr, "|");
-                ++it;
+        //TODO si el diccionario esta vacio revienta
+        if(Clientes->size()==1){
+          strcat(retStr, it->second->nick);
         }
+        else{
+          strcat(retStr, it->second->nick);
+          ++it;
+          while(it != Clientes->end()) {
+                  strcat(retStr, "|");
+                  strcat(retStr, it->second->nick);
+                  ++it;
+          }
+        }
+
 
         return retStr;
 }
@@ -127,6 +132,7 @@ void* debug(){
 
         Cliente* c = getCliente(cstrIp);
 
+
         parseMessage(c, cstrComando);
 };
 
@@ -184,7 +190,7 @@ int consola() {
                         tiempoEjecucion();
                 } else if (c=='x') {
                         // * f – tiempo (wall time) de ejecución
-                        cout << "DEBUG::" << endl;
+                        cout << "DEBUG::" ;
                         debugRdt();
                 } else {
                         cout << "Comando no reconocido." << endl;
@@ -205,9 +211,9 @@ int main(int argc, char** argv) {
         //Clientes* clientes = new Clientes();
         MapClientes* clientes = Clientes;
         iniServer();
-        consola();
-
+        //consola();
         for (int i = 0; i < 20; i++) {
+
                 char* ip = new char[20];
                 sprintf(ip, "192.168.1.%d", i);
 
@@ -229,8 +235,4 @@ int main(int argc, char** argv) {
         cout << getConected() << endl;
 
         return 0;
-
-        while (true) {
-                //lee comandos de una pila
-        }
 }
