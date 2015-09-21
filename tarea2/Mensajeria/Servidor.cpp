@@ -11,6 +11,8 @@
 #include <string>
 using namespace std;
 
+#include "rdt.h"
+
 
 typedef struct Cliente {
     char nick[50];
@@ -75,9 +77,14 @@ int main(int argc, char** argv) {
     }
 
     cout << "prueba" << endl;
+    char* bufferPrueba = new char[50];
 
-    for (MapClientes::iterator it = clientes->begin(); it != clientes->end(); ++it)
-        std::cout << it->first << " => " << it->second->nick << '\n';
+    for (MapClientes::iterator it = clientes->begin(); it != clientes->end(); ++it){
+      sprintf(bufferPrueba, "prueba <%s>", it->first);
+      rdt_send(bufferPrueba);
+      std::cout << it->first << " => " << it->second->nick << '\n';
+    }
+
     return 0;
 
     while (true) {
