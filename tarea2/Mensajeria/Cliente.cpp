@@ -9,15 +9,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h> //sleep
-
 #include <pthread.h>
-
-
-
 
 //c++
 #include <string>
 #include <iostream>
+
+#include "rdt.h"
 
 using namespace std;
 
@@ -90,9 +88,10 @@ void * receptorMensajes(void*) {
 //prototipo
 
 void sendToServer(char* mensaje) {
-    cout << "Enviando: ::" << mensaje << ":::" << endl;
+    cout << "Enviando ::" << mensaje << ":::" << endl;
     unsigned int seconds = 2;
     sleep(seconds);
+    rdt_send(mensaje);
     cout << "Mensaje enviado ✓" << endl;
 }
 

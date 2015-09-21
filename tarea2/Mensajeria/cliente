@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ ! -f .servidor ]; then
-    make servidor
+if [ ! -f .cliente ]; then
+    make cliente
 fi
 
-./.servidor
+./.cliente
