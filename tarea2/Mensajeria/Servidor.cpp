@@ -9,53 +9,154 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <string.h>
+#include <time.h>
+time_t start = time(0);
 using namespace std;
 
 #include "rdt.h"
+#include "constantes.h"
 
 
 typedef struct Cliente {
-    char nick[50];
-    char ip[20];
-    int cantMensajes;
-
+        char nick[50];
+        char ip[20];
+        int cantMensajes;
 } Cliente;
 typedef struct Servidor {
-    int cantMensajes;
+        int cantMensajes;
+        int cantClientes;
 } Servidor;
 typedef map<char*, Cliente*> MapClientes;
 
 MapClientes* Clientes = new MapClientes;
+Servidor* servidor = new Servidor;
 
 int prueba() {
-    return 0;
+        return 0;
 }
 
 void loginCliente(Cliente* c) {
-    Clientes->insert(make_pair(c->ip, c));
+        Clientes->insert(make_pair(c->ip, c));
 }
 void logOut(Cliente* c){
-    Clientes->erase(c->ip);
+        Clientes->erase(c->ip);
 };
 
 Cliente* getCliente(char* ip){
-    try {
-        return Clientes->at(ip);
-    }catch(...){
-        cout << "cliente no existe" << endl;
-        return NULL;
-    }
+        try {
+                return Clientes->at(ip);
+        }catch(...) {
+                cout <<
+                "cliente no existe" << endl;
+                return NULL;
+        }
+}
+
+char* getConected(){
+  char* retStr = new char[MAX_LARGO_MENSAJE];
+  // for(int i=0; i < servidor->cantClientes;i++){
+  //
+  // }
+  MapClientes::iterator it = Clientes->begin();
+  while(it != Clientes->end()){
+    //FIXME arreglar el ultimo pipe
+    strcat(retStr, it->second->nick);
+    strcat(retStr, "|");
+    ++it;
+  }
+
+  return retStr;
 }
 
 void enviarMensajePrivado(Cliente* from, Cliente* to){
-    throw "TO-DO";
+        throw "TO-DO";
 };
 
 void enviarMensajePrivado(char* ipFrom, char* ipTo){
-    Cliente* cFrom = getCliente(ipFrom);
-    Cliente* cTo = getCliente(ipTo);
-    enviarMensajePrivado(cFrom, cTo);
+        Cliente* cFrom = getCliente(ipFrom);
+
+        Cliente* cTo = getCliente(ipTo);
+        enviarMensajePrivado(cFrom, cTo);
 }
+
+// LOGIN usuario _CR_
+// LOGOUT CR
+// GET_CONNECTED CR
+// MESSAGE _msg _CR_
+// PRIVATE_MESSAGE receptor _msg_ _CR_
+
+void parseMessage(Cliente* c, char* mensaje){
+    string comando = mensaje;
+
+    if (comando.find(LOGIN) == 0) {
+      //obtengo nombre de usuario
+      strcpy(c->nick,mensaje);
+      loginCliente(c);
+    } else if (comando.find(LOGOUT) == 0) {
+      //desloegueo al usuario
+      logOut(c);
+    } else if (comando.find(GET_CONNECTED) == 0) {
+      //envio conectados
+      char* conectados = getConected();
+    } else if (comando.find(MESSAGE) == 0) {
+      //envio mensaje multicast
+    } else if (comando.find(PRIVATE_MESSAGE) == 0) {
+      //envio mensaje privado
+    } else {
+      std::cout << "Ha llegado un mensaje invallido desde el servidor." << std::endl;
+    }
+}
+
+
+// * a – cantidad de clientes conectados -- clientes logueados
+// * s – cantidad de mensajes enviados -- lista de mensajes
+// * d – cantidad de conexiones totales
+// * f – tiempo (wall time) de ejecución
+void* debug(){
+  cout << "::DEBUG:: escribe ip de cliente" << endl;
+  string ip;
+  getline(cin, ip);
+  cout << "::DEBUG:: escribe un mensaje que llega desde cliente" << endl;
+  cout << ">";
+  string comando;
+  getline(cin, comando);
+
+  char * cstrComando = new char [comando.length()+1];
+  strcpy (cstrComando, comando.c_str());
+
+  char * cstrIp = new char [comando.length()+1];
+  strcpy (cstrIp, comando.c_str());
+
+  Cliente* c = getCliente(cstrIp);
+
+  parseMessage(c, cstrComando);
+};
+
+int consola() {
+        char c;
+        double seconds_since_start;
+        do {
+                c=getchar();
+                if (c=='a') {
+                  /* code */
+                } else if (c=='s') {
+                  /* code */
+                }else if (c=='d') {
+                  /* code */
+                }else if (c=='f') {
+                  seconds_since_start = difftime( time(0), start);
+                  std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
+                } else {
+                  debug();
+                }
+                putchar(c);
+        } while (c != '.');
+        return 0;
+}
+
+
+
 
 
 /*
@@ -63,31 +164,33 @@ void enviarMensajePrivado(char* ipFrom, char* ipTo){
  */
 int main(int argc, char** argv) {
 
-    //Clientes* clientes = new Clientes();
-    MapClientes* clientes = Clientes;
+        //Clientes* clientes = new Clientes();
+        MapClientes* clientes = Clientes;
 
-    for (int i = 0; i < 20; i++) {
-        char* ip = new char[20];
-        sprintf(ip, "192.168.1.%d", i);
+        for (int i = 0; i < 20; i++) {
+                char* ip = new char[20];
+                sprintf(ip, "192.168.1.%d", i);
 
-        Cliente* c = new Cliente;
-        sprintf(c->nick, "Cliente[%d]", i);
+                Cliente* c = new Cliente;
+                sprintf(c->nick, "nick_%d", i);
 
-        clientes->insert(pair<char*, Cliente*>(ip, c));
-    }
+                clientes->insert(pair<char*, Cliente*>(ip, c));
+        }
 
-    cout << "prueba" << endl;
-    char* bufferPrueba = new char[50];
+        cout << "prueba" << endl;
+        char* bufferPrueba = new char[50];
 
-    for (MapClientes::iterator it = clientes->begin(); it != clientes->end(); ++it){
-      sprintf(bufferPrueba, "prueba <%s>", it->first);
-      rdt_send(bufferPrueba);
-      std::cout << it->first << " => " << it->second->nick << '\n';
-    }
+        for (MapClientes::iterator it = clientes->begin(); it != clientes->end(); ++it) {
+                sprintf(bufferPrueba, "prueba <%s>", it->first);
+                rdt_send(bufferPrueba);
+                std::cout << it->first << " => " << it->second->nick << '\n';
+        }
 
-    return 0;
+        cout << getConected() << endl;
 
-    while (true) {
-        //lee comandos de una pila
-    }
+        return 0;
+
+        while (true) {
+                //lee comandos de una pila
+        }
 }

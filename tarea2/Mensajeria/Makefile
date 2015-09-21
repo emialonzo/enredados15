@@ -6,7 +6,13 @@ compilar: servidor cliente
 	$(info Se han compilado el servidor y el cliente ✓)
 
 servidor: Servidor.cpp
-	$(CC) Servidor.cpp rdt.cpp $(FLAGS) -o .servidor
+	$(CC) Servidor.cpp rdt.cpp constantes.h $(FLAGS) -o .servidor
 
 cliente: Cliente.cpp
 		$(CC) Cliente.cpp rdt.cpp $(FLAGS) -o .cliente
+
+ejecutarServidor: servidor
+	./.servidor
+
+ejecutarCliente: cliente
+		./.cliente
