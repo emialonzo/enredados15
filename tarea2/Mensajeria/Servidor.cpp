@@ -109,10 +109,7 @@ void parseMessage(Cliente* c, char* mensaje){
 }
 
 
-// * a – cantidad de clientes conectados -- clientes logueados
-// * s – cantidad de mensajes enviados -- lista de mensajes
-// * d – cantidad de conexiones totales
-// * f – tiempo (wall time) de ejecución
+
 void* debug(){
         cout << "::DEBUG:: escribe ip de cliente" << endl;
         string ip;
@@ -143,26 +140,56 @@ void* debugRdt(){
 
 };
 
+void clientesConectados(){
+        //TODO
+        cout << "TODO" << endl;
+}
+void mensajesEnviados(){
+        //TODO
+        cout << "TODO" << endl;
+}
+void conexionesTotales(){
+        //TODO
+        cout << "TODO" << endl;
+}
+void tiempoEjecucion(){
+        //TODO
+        double seconds_since_start;
+        seconds_since_start = difftime( time(0), start);
+        std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
+}
+
 int consola() {
         char c;
-        double seconds_since_start;
 
         do {
-                c=getchar();
+          cout << ">" ;
+                string comando;
+                getline(cin, comando);
+                c=comando.c_str()[0];
                 if (c=='a') {
+                        // * a – cantidad de clientes conectados -- clientes logueados
+                        clientesConectados();
                         /* code */
                 } else if (c=='s') {
+                        // * s – cantidad de mensajes enviados -- lista de mensajes
+                        mensajesEnviados();
                         /* code */
-                }else if (c=='d') {
+                } else if (c=='d') {
+                        // * d – cantidad de conexiones totales
+                        conexionesTotales();
                         /* code */
-                }else if (c=='f') {
-                        seconds_since_start = difftime( time(0), start);
-                        std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
-                } else {
+                } else if (c=='f') {
+                        // * f – tiempo (wall time) de ejecución
+                        tiempoEjecucion();
+                } else if (c=='x') {
+                        // * f – tiempo (wall time) de ejecución
+                        cout << "DEBUG::" << endl;
                         debugRdt();
+                } else {
+                        cout << "Comando no reconocido." << endl;
                 }
-                putchar(c);
-        } while (c != '.');
+        } while (c != 'e');
         return 0;
 }
 
