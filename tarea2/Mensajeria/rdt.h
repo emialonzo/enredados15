@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   rdt.h
  * Author: emi
  *
@@ -8,7 +8,13 @@
 #ifndef RDT_H
 #define	RDT_H
 
+void iniRdt();
+char* recibir();
+
+void iniServer();
+void sendMulticast(char* mensaje); //habria que pasarle lista de conectados, como desacoplamos las capas?
+
+
 void rdt_send(char* datos);
 
 #endif	/* RDT_H */
-

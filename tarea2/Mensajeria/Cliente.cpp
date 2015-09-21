@@ -47,14 +47,16 @@ const int NumberTest = 8;
 void * receptorMensajes(void*) {
     int i = 0;
     //char* comando; //= new char[50];
-    const char* comando; //= new char[50];
+    char* comando; //= new char[50];
+    iniRdt();
 
-    while (i < NumberTest) {
+    while (true) {
         //while (true) {
 
         //recibo mensaje, se bloquea hasta que recibe un mensaje
         //parseo mensaje
-        comando = TestCommands[i];
+        comando = recibir();
+        cerr << "Mensaje (" << i << ") recibido::" << comando << "::" << endl;
         if (strcmp(comando, RELAYED_MESSAGE) == 0) {
             //obtenego emisor
             //obtengo mensaje

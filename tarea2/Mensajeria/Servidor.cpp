@@ -54,19 +54,19 @@ Cliente* getCliente(char* ip){
 }
 
 char* getConected(){
-  char* retStr = new char[MAX_LARGO_MENSAJE];
-  // for(int i=0; i < servidor->cantClientes;i++){
-  //
-  // }
-  MapClientes::iterator it = Clientes->begin();
-  while(it != Clientes->end()){
-    //FIXME arreglar el ultimo pipe
-    strcat(retStr, it->second->nick);
-    strcat(retStr, "|");
-    ++it;
-  }
+        char* retStr = new char[MAX_LARGO_MENSAJE];
+        // for(int i=0; i < servidor->cantClientes;i++){
+        //
+        // }
+        MapClientes::iterator it = Clientes->begin();
+        while(it != Clientes->end()) {
+                //FIXME arreglar el ultimo pipe
+                strcat(retStr, it->second->nick);
+                strcat(retStr, "|");
+                ++it;
+        }
 
-  return retStr;
+        return retStr;
 }
 
 void enviarMensajePrivado(Cliente* from, Cliente* to){
@@ -87,25 +87,25 @@ void enviarMensajePrivado(char* ipFrom, char* ipTo){
 // PRIVATE_MESSAGE receptor _msg_ _CR_
 
 void parseMessage(Cliente* c, char* mensaje){
-    string comando = mensaje;
+        string comando = mensaje;
 
-    if (comando.find(LOGIN) == 0) {
-      //obtengo nombre de usuario
-      strcpy(c->nick,mensaje);
-      loginCliente(c);
-    } else if (comando.find(LOGOUT) == 0) {
-      //desloegueo al usuario
-      logOut(c);
-    } else if (comando.find(GET_CONNECTED) == 0) {
-      //envio conectados
-      char* conectados = getConected();
-    } else if (comando.find(MESSAGE) == 0) {
-      //envio mensaje multicast
-    } else if (comando.find(PRIVATE_MESSAGE) == 0) {
-      //envio mensaje privado
-    } else {
-      std::cout << "Ha llegado un mensaje invallido desde el servidor." << std::endl;
-    }
+        if (comando.find(LOGIN) == 0) {
+                //obtengo nombre de usuario
+                strcpy(c->nick,mensaje);
+                loginCliente(c);
+        } else if (comando.find(LOGOUT) == 0) {
+                //desloegueo al usuario
+                logOut(c);
+        } else if (comando.find(GET_CONNECTED) == 0) {
+                //envio conectados
+                char* conectados = getConected();
+        } else if (comando.find(MESSAGE) == 0) {
+                //envio mensaje multicast
+        } else if (comando.find(PRIVATE_MESSAGE) == 0) {
+                //envio mensaje privado
+        } else {
+                std::cout << "Ha llegado un mensaje invallido hacia el servidor." << std::endl;
+        }
 }
 
 
@@ -114,41 +114,52 @@ void parseMessage(Cliente* c, char* mensaje){
 // * d – cantidad de conexiones totales
 // * f – tiempo (wall time) de ejecución
 void* debug(){
-  cout << "::DEBUG:: escribe ip de cliente" << endl;
-  string ip;
-  getline(cin, ip);
-  cout << "::DEBUG:: escribe un mensaje que llega desde cliente" << endl;
-  cout << ">";
-  string comando;
-  getline(cin, comando);
+        cout << "::DEBUG:: escribe ip de cliente" << endl;
+        string ip;
+        getline(cin, ip);
+        cout << "::DEBUG:: escribe un mensaje que llega desde cliente" << endl;
+        cout << ">";
+        string comando;
+        getline(cin, comando);
 
-  char * cstrComando = new char [comando.length()+1];
-  strcpy (cstrComando, comando.c_str());
+        char * cstrComando = new char [comando.length()+1];
+        strcpy (cstrComando, comando.c_str());
 
-  char * cstrIp = new char [comando.length()+1];
-  strcpy (cstrIp, comando.c_str());
+        char * cstrIp = new char [comando.length()+1];
+        strcpy (cstrIp, comando.c_str());
 
-  Cliente* c = getCliente(cstrIp);
+        Cliente* c = getCliente(cstrIp);
 
-  parseMessage(c, cstrComando);
+        parseMessage(c, cstrComando);
+};
+
+void* debugRdt(){
+        cout << ">";
+        string comando;
+        getline(cin, comando);
+        char* mensaje = new char[MAX_LARGO_MENSAJE];
+        strcpy(mensaje, comando.c_str());
+        sendMulticast(mensaje);
+
 };
 
 int consola() {
         char c;
         double seconds_since_start;
+
         do {
                 c=getchar();
                 if (c=='a') {
-                  /* code */
+                        /* code */
                 } else if (c=='s') {
-                  /* code */
+                        /* code */
                 }else if (c=='d') {
-                  /* code */
+                        /* code */
                 }else if (c=='f') {
-                  seconds_since_start = difftime( time(0), start);
-                  std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
+                        seconds_since_start = difftime( time(0), start);
+                        std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
                 } else {
-                  debug();
+                        debugRdt();
                 }
                 putchar(c);
         } while (c != '.');
@@ -166,6 +177,8 @@ int main(int argc, char** argv) {
 
         //Clientes* clientes = new Clientes();
         MapClientes* clientes = Clientes;
+        iniServer();
+        consola();
 
         for (int i = 0; i < 20; i++) {
                 char* ip = new char[20];
