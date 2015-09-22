@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
         //Clientes* clientes = new Clientes();
         MapClientes* clientes = Clientes;
         iniServer();
-        //consola();
+        consola();
         for (int i = 0; i < 20; i++) {
 
                 char* ip = new char[20];
