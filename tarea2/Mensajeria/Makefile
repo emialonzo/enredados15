@@ -4,19 +4,19 @@ IP = ifconfig wlan0 | grep 'inet:' | cut -d: -f2 | awk '{print $1}'
 
 
 
-compilar: servidor cliente
+compilar: .servidor .cliente
 	$(info Se han compilado el servidor y el cliente ✓)
 
-servidor: Servidor.cpp
-	$(CC) Servidor.cpp rdt.cpp constantes.h $(FLAGS) -o .servidor
+.servidor: Servidor.cpp rdt.cpp mensaje.cpp constantes.h
+	$(CC) Servidor.cpp rdt.cpp constantes.h  mensaje.cpp $(FLAGS) -o .servidor
 
-cliente: Cliente.cpp
-		$(CC) Cliente.cpp rdt.cpp $(FLAGS) -o .cliente
+.cliente: Cliente.cpp rdt.cpp mensaje.cpp
+		$(CC) Cliente.cpp rdt.cpp  mensaje.cpp $(FLAGS) -o .cliente
 
-ejecutarServidor: servidor
+ejecutarServidor: .servidor
 	./.servidor
 
-ejecutarCliente: cliente
+ejecutarCliente: .cliente
 		./.cliente
 
 # obtenerIp:

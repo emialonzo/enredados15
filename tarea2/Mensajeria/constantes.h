@@ -32,4 +32,8 @@
 
 #define MSGBUFSIZE 256
 
+#define MAX_RDT_MSJ 100
+#define MAX_IP_LENGTH 16 //xxx.xxx.xxx.xxx
+
+
 #endif	/* CONSTANTES_H */
