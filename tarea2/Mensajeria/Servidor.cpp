@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <map>
+#include <queue>
 #include <string>
 #include <string.h>
 #include <time.h>
@@ -16,6 +17,14 @@ using namespace std;
 
 #include "rdt.h"
 #include "constantes.h"
+
+//FIXME esto es para probar tiene que volar
+#include "rdt_test.h"
+
+#define RELAYED_MESSAGE "RELAYED_MESSAGE"
+#define PRIVATE_MESSAGE "PRIVATE_MESSAGE"
+#define CONNECTED "CONNECTED"
+#define GOODBYE "GOODBYE"
 
 
 typedef struct Cliente {
@@ -27,14 +36,32 @@ typedef struct Servidor {
         int cantMensajes;
         int cantClientes;
 } Servidor;
-typedef map<char*, Cliente*> MapClientes;
+typedef struct Mensaje {
+        char  destino[MAX_IP_LENGTH];
+        char  origen[MAX_IP_LENGTH];
+        char  msg[MAX_TEXTO];
+        bool  multicast;
+
+} Mensaje;
+typedef map<string, Cliente*> MapClientes;
+
+typedef enum  {COM_LOGIN, COM_LOGOUT, COM_GET_CONNECTED, COM_MSG, COM_PVT_MSG, COM_INVALID} MsgComand;
 
 MapClientes* Clientes = new MapClientes;
 Servidor* servidor = new Servidor;
 
-int prueba() {
-        return 0;
-}
+typedef queue<Mensaje*> ColaMensajes;
+
+ColaMensajes* colaMensajes = new ColaMensajes;
+
+char* ipServidor = IP_SERVIDOR;
+int puertoServidor;
+
+char* ipMulticast = IP_MULTICAST;
+int puertoMulticast;
+
+pthread_mutex_t queueMutex;
+pthread_cond_t emitCond;
 
 void loginCliente(Cliente* c) {
         Clientes->insert(make_pair(c->ip, c));
@@ -51,6 +78,42 @@ Cliente* getCliente(char* ip){
                 "cliente no existe" << endl;
                 return NULL;
         }
+}
+
+Cliente* getClienteByNick(const char* nick) {
+        Cliente * ret = NULL;
+        map<string, Cliente*>::iterator iter = Clientes->begin();
+
+        while (iter != Clientes->end()) {
+                ret = iter->second;
+
+                if (strcmp(ret->nick, nick) == 0) {
+                        return ret;
+                }
+                ++iter;
+        }
+
+        return ret;
+}
+
+
+
+Mensaje* crearMensaje(char* ipDestino, bool multicast, char* contenido) {
+
+        Mensaje* ret = new Mensaje();
+        strcpy(ret->origen,IP_SERVIDOR);
+        strcpy(ret->msg, contenido);
+        strcpy(ret->destino, ipDestino);
+        ret->multicast = multicast;
+
+        return ret;
+}
+
+void encolarMensaje(Mensaje* mensaje) {
+        pthread_mutex_lock(&queueMutex);
+        colaMensajes->push(mensaje);
+        pthread_cond_signal(&emitCond);
+        pthread_mutex_unlock(&queueMutex);
 }
 
 char* getConected(){
@@ -70,26 +133,90 @@ char* getConected(){
           }
         }
 
-
         return retStr;
 }
 
-void enviarMensajePrivado(Cliente* from, Cliente* to){
-        throw "TO-DO";
-};
-
-void enviarMensajePrivado(char* ipFrom, char* ipTo){
-        Cliente* cFrom = getCliente(ipFrom);
-
-        Cliente* cTo = getCliente(ipTo);
-        enviarMensajePrivado(cFrom, cTo);
+int processGetConnectedMsg(char* ip) {
+        char contenido[MAX_TEXTO];
+        sprintf(contenido, "%s %s", CONNECTED, getConected());
+        Mensaje* mensaje = crearMensaje(ip, false, contenido);
+        encolarMensaje(mensaje);
+        return 0;
 }
 
-// LOGIN usuario _CR_
-// LOGOUT CR
-// GET_CONNECTED CR
-// MESSAGE _msg _CR_
-// PRIVATE_MESSAGE receptor _msg_ _CR_
+int processLoginMsg(char* ip, char * msg) {
+        if (Clientes->find(ip) == Clientes->end()) {
+                Cliente * cli = new Cliente();
+                string nick = msg;
+                nick = nick.substr(nick.find(" ") + 1);
+                strcpy(cli->nick, nick.c_str());
+                strcpy(cli->ip, ip);
+                Clientes->insert(make_pair(cli->ip, cli));
+                return 0;
+        }
+        return -1;
+}
+
+int processLogut(char* ip) {
+        Clientes->erase(ip);
+        char contenido[MAX_TEXTO] = GOODBYE;
+        Mensaje* mensaje = crearMensaje(ip, false, contenido);
+        encolarMensaje(mensaje);
+        return 0;
+}
+
+int processMulticastMessage(char* sourceIp, char* recv_msg) {
+
+        map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
+
+        if (iter != Clientes->end()) {
+                Cliente* cli = iter->second;
+                string str_contenido = recv_msg;
+                str_contenido = str_contenido.substr(str_contenido.find(" ") +1);
+
+                char contenido[MAX_TEXTO];
+                sprintf(contenido, "%s %s %s", RELAYED_MESSAGE, cli->nick, str_contenido.c_str());
+
+                Mensaje* mensaje = crearMensaje(ipMulticast, true, contenido);
+                encolarMensaje(mensaje);
+                return 0;
+        }
+
+        return -1;
+}
+
+int processPrivatetMessage(char* sourceIp, char* recv_msg) {
+
+        map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
+
+        if (iter != Clientes->end()) {
+                Cliente* cli = iter->second;
+                string str_recv_msg = recv_msg;
+
+                //Descarto el cabezal private msg
+                str_recv_msg = str_recv_msg.substr(str_recv_msg.find(" ") +1);
+
+                //Nick esta desde el inicio hasta el fin
+                const char* dest_nick = str_recv_msg.substr(0, str_recv_msg.find(" ")).c_str();
+
+                Cliente* dest_cli = getClienteByNick(dest_nick);
+                if (dest_cli != NULL) {
+                        //Descarto el nick y me quedo con el mensaje
+                        str_recv_msg = str_recv_msg.substr(str_recv_msg.find(" ") +1);
+
+                        char contenido[MAX_TEXTO];
+                        sprintf(contenido, "%s %s %s", PRIVATE_MESSAGE, cli->nick, str_recv_msg.c_str());
+
+                        Mensaje* mensaje = crearMensaje(dest_cli->ip, false, contenido);
+                        encolarMensaje(mensaje);
+                        return 0;
+                }
+        }
+
+        return -1;
+}
+
+
 
 void parseMessage(Cliente* c, char* mensaje){
         string comando = mensaje;
@@ -103,7 +230,7 @@ void parseMessage(Cliente* c, char* mensaje){
                 logOut(c);
         } else if (comando.find(GET_CONNECTED) == 0) {
                 //envio conectados
-                char* conectados = getConected();
+                //char* conectados = getConected();
         } else if (comando.find(MESSAGE) == 0) {
                 //envio mensaje multicast
         } else if (comando.find(PRIVATE_MESSAGE) == 0) {
@@ -111,6 +238,25 @@ void parseMessage(Cliente* c, char* mensaje){
         } else {
                 std::cout << "Ha llegado un mensaje invallido hacia el servidor." << std::endl;
         }
+}
+
+MsgComand getCommandFromMsg(char* msg) {
+        string comando = msg;
+        MsgComand ret = COM_INVALID;
+
+        if (comando.find(LOGIN) == 0) {
+                ret = COM_LOGIN;
+        } else if (comando.find(LOGOUT) == 0) {
+                ret = COM_LOGOUT;
+        } else if (comando.find(GET_CONNECTED) == 0) {
+                ret = COM_GET_CONNECTED;
+        } else if (comando.find(MESSAGE) == 0) {
+                ret = COM_MSG;
+        } else if (comando.find(PRIVATE_MESSAGE) == 0) {
+                ret = COM_PVT_MSG;
+        }
+
+        return ret;
 }
 
 
@@ -134,6 +280,7 @@ void* debug(){
 
 
         parseMessage(c, cstrComando);
+        return NULL;
 };
 
 void* debugRdt(){
@@ -143,7 +290,7 @@ void* debugRdt(){
         char* mensaje = new char[MAX_LARGO_MENSAJE];
         strcpy(mensaje, comando.c_str());
         sendMulticast(mensaje);
-
+        return NULL;
 };
 
 void clientesConectados(){
@@ -199,8 +346,72 @@ int consola() {
         return 0;
 }
 
+void* emisorMensajes(void*) {
+
+        while (true) {
+                //mutex_lock
+                pthread_mutex_lock(&queueMutex);
+                if (colaMensajes->empty()) {
+                        //wait_cond
+                        pthread_cond_wait(&emitCond,&queueMutex);
+                        //cout << "Emisor liberado" << endl;
+                }
+
+                Mensaje * msg = colaMensajes->front();
+
+                colaMensajes->pop();
+                //mutex_unlock
+                pthread_mutex_unlock(&queueMutex);
+
+                appMsg* rdt_msg = new appMsg();
+                strcpy(rdt_msg->mensaje, msg->msg);
+                strcpy(rdt_msg->source_ip, msg->origen);
+
+                if (msg->multicast) {
+                        //FIXME esto es de test aca se hce multicast
+                        test_rdt_send_broadcast(rdt_msg, msg->destino);
+                }
+                else {
+                        //FIXME esto es de test aca se hace unicast
+                        test_rdt_send(rdt_msg, msg->destino);
+                }
+
+        }
+        return NULL;
+}
 
 
+void* receptorMensajes(void*) {
+
+        while (true) {
+                //FIXME esto es un test, aca va rdt_rvc
+                appMsg* msg = test_rdt_rcv();
+
+                MsgComand command = getCommandFromMsg(msg->mensaje);
+
+                switch (command) {
+                        case COM_LOGIN:
+                                processLoginMsg(msg->source_ip, msg->mensaje);
+                                break;
+                        case COM_GET_CONNECTED:
+                                processGetConnectedMsg(msg->source_ip);
+                                break;
+                        case COM_MSG:
+                                processMulticastMessage(msg->source_ip, msg->mensaje);
+                                break;
+                        case COM_PVT_MSG:
+                                processPrivatetMessage(msg->source_ip, msg->mensaje);
+                                break;
+                        case COM_LOGOUT:
+                                processLogut(msg->source_ip);
+                                break;
+                        case COM_INVALID:
+                                //TODO ver que se hace con un caracter valido
+                                break;
+                }
+        }
+        return NULL;
+}
 
 
 /*
@@ -208,11 +419,21 @@ int consola() {
  */
 int main(int argc, char** argv) {
 
-        //Clientes* clientes = new Clientes();
-        MapClientes* clientes = Clientes;
+
         iniServer();
+        test_init();
+
+        pthread_mutex_init(&queueMutex, NULL);
+        pthread_cond_init (&emitCond, NULL);
+
+        pthread_t receptorHilo;
+        pthread_create(&receptorHilo, NULL, receptorMensajes, NULL);
+
+        pthread_t emisorHilo;
+        pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
+
         consola();
-        for (int i = 0; i < 20; i++) {
+        /*for (int i = 0; i < 20; i++) {
 
                 char* ip = new char[20];
                 sprintf(ip, "192.168.1.%d", i);
@@ -232,7 +453,7 @@ int main(int argc, char** argv) {
                 std::cout << it->first << " => " << it->second->nick << '\n';
         }
 
-        cout << getConected() << endl;
+        cout << getConected() << endl;*/
 
         return 0;
 }
