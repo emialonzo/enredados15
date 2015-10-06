@@ -9,16 +9,31 @@
 #define	RDTPRUEBA_H
 
 #include "constantes.h"
+#include <map>
+ using namespace std;
 
-typedef struct {
-  char from[MAX_IP_LENGTH];
-  bool multicast;
-  bool esAck;
-  int seq;
-  char mensaje[MAX_RDT_MSJ];
-} rdtMsj;
+// typedef struct {
+//   char from[MAX_IP_LENGTH];
+//   bool multicast;
+//   bool esAck;
+//   int seq;
+//   char mensaje[MAX_RDT_MSJ];
+// } rdtMsj;
 
+typedef struct{
+  char ip[MAX_IP_LENGTH];
+  int puerto;
+}ClientId;
 
+struct ClientIdCompare
+{
+   bool operator() (const ClientId& lhs, const ClientId& rhs)
+   {
+       return lhs.puerto < rhs.puerto;
+   }
+};
+
+typedef map<ClientId, bool> TablaClienteId;
 
 void iniRdt();
 char* recibir();

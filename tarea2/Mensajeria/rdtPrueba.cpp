@@ -93,8 +93,8 @@ int CrearSocket(int puerto, bool multicast){
   return sockete;
 }
 
-int getSequenceNumber(char* ipFrom){
-  TablaSecuencias::iterator it = receptor->find(ipFrom);
+int getSequenceNumber(TablaSecuencias* tabla, char* ipFrom){
+  TablaSecuencias::iterator it = tabla->find(ipFrom);
   if(it == receptor->end()){
     char* ip = new char[strlen(ipFrom)];
     strcpy(ip, ipFrom);
@@ -105,8 +105,8 @@ int getSequenceNumber(char* ipFrom){
   return it->second;
 }
 
-void updateSequenceNumber(char* ip, int num){
-  (*receptor)[ip]=num;
+void updateSequenceNumber(TablaSecuencias* tabla, char* ip, int num){
+  (*tabla)[ip]=num;
 }
 
 char* rdt_recibe(int soc){
@@ -143,23 +143,22 @@ char* rdt_recibe(int soc){
     //   // (*receptor)[ipFrom]=0;
     // }
     // int seqEsperado = it->second;
-     int seqEsperado = getSequenceNumber(ipFrom);
+    int seqEsperado = getSequenceNumber(receptor, ipFrom);
 
     rdtMsj* respuesta = new rdtMsj;
     respuesta->esAck=true;
     // respuesta.from = "importa?";
     // respuesta.mensaje="importa munia?";
-    respuesta->multicast=mensaje->multicast;
-
+    respuesta->esMulticast=mensaje->esMulticast;
     //envio ACK ok
     respuesta->seq=seqEsperado;
-    int result = sendto(soc, respuesta, sizeof(respuesta), 0, (struct sockaddr *)&addr, addrlen);
 
-    if(  seqEsperado == mensaje->seq){ //(&& result > 0 )
+    int result = sendto(soc, respuesta, sizeof(respuesta), 0, (struct sockaddr *)&addr, addrlen);
+    if( (result>0) && (seqEsperado == mensaje->seq)){ //(&& result > 0 )
       //actualizo tabla
       int newSeq = (++seqEsperado)%2;
       // it->second = newSeq;
-      updateSequenceNumber(ipFrom, newSeq);
+      updateSequenceNumber(receptor, ipFrom, newSeq);
       //todo ok :)
       printf("DEBUG::Mensaje recibido: %s\n", mensaje->mensaje);
       char* retMen = new char[MSGBUFSIZE];
@@ -182,7 +181,7 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
   addr.sin_port = htons(puerto);
   addr.sin_addr.s_addr = inet_addr(ip);
 
-  int seqEsperado = getSequenceNumber(ip);
+  int seqEsperado = getSequenceNumber(emisor, ip);
 
   while(true){
     addrlen  = sizeof(addr);
@@ -193,29 +192,30 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
     mensaje->esAck=false;
     strcpy(mensaje->from, "esNecesario?");
     strcpy(mensaje->mensaje, mensajeToSend);
-    mensaje->multicast=false;
-    mensaje->seq = getSequenceNumber(ip);
+    mensaje->esMulticast=false;
+    mensaje->seq = getSequenceNumber(emisor, ip);
 
     int result = sendto(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, addrlen);
 
-    rdtMsj* mensajeRcb;
-    memset(&mensajeRcb , 0, sizeof(mensaje));
-    //envio ACK ok
+    if(result >0){
+      rdtMsj* mensajeRcb;
+      memset(&mensajeRcb , 0, sizeof(mensaje));
+      //envio ACK ok
+      if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
+        perror("recvfrom");
+        exit(1);
+      }
 
-    if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
-      perror("recvfrom");
-      exit(1);
-    }
-
-    char* ipFrom = inet_ntoa(addr.sin_addr);
-    if( (strcmp(ipFrom, ip)==0) && (mensajeRcb->esAck) &&  (mensajeRcb->seq==seqEsperado)){
-      //mismo ip
-      updateSequenceNumber(ip, (++seqEsperado)%2);
-      printf("DEBUG::Mensaje enviado: %s\n", mensaje->mensaje);
-      return ;
-    }
-    else{
-      printf("DEBUG::Error: :(\n");
+      char* ipFrom = inet_ntoa(addr.sin_addr);
+      if( (strcmp(ipFrom, ip)==0) && (mensajeRcb->esAck) &&  (mensajeRcb->seq==seqEsperado)){
+        //mismo ip
+        updateSequenceNumber(emisor, ip, (++seqEsperado)%2);
+        printf("DEBUG::Mensaje enviado: %s\n", mensaje->mensaje);
+        return ;
+      }
+      else{
+        printf("DEBUG::Error: :(\n");
+      }
     }
 
   }
@@ -244,6 +244,78 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 //     exit(1);
 //   }
 // }
+
+void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes){
+
+      struct sockaddr_in addr;
+  int nbytes;
+  socklen_t addrlen;
+
+  //int seqEsperado = getSequenceNumber(emisor, ip);
+
+  struct sockaddr_in addr_multicast;
+  memset((char *)&addr_multicast, 0, sizeof(addr_multicast));
+  addr_multicast.sin_family = AF_INET;
+  addr_multicast.sin_port = htons(puerto_multicast);
+  addr_multicast.sin_addr.s_addr = inet_addr(ip_multicast.c_str());
+
+
+  while(true){
+    //addrlen  = sizeof(addr);
+    // int result = sendto(soc, respuesta, sizeof(respuesta), 0, (struct sockaddr *)&addr, addrlen);
+
+    rdtMsj* mensaje;
+    memset(&mensaje , 0, sizeof(mensaje));
+    mensaje->esAck=false;
+    strcpy(mensaje->from, "esNecesario?");
+    strcpy(mensaje->mensaje, mensajeToSend);
+    mensaje->esMulticast=true;
+
+    mensaje->seq = 0; //FIXME getSequenceNumber(emisor, ip);
+
+    int result = sendto(socket_servidor, mensaje, sizeof(mensaje), 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
+    //int result = sendto(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, addrlen);
+
+
+    int cantClientes=tablaClientes->size();
+    int ackRecibidosOk=0;
+    if(result >0){
+      while(cantClientes>ackRecibidosOk){
+        rdtMsj* mensajeRcb;
+        memset(&mensajeRcb , 0, sizeof(mensaje));
+        //envio ACK ok
+        memset(&addr, 0, sizeof(addr));
+        if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
+          perror("recvfrom");
+          exit(1);
+        }
+
+        char* ipFrom = inet_ntoa(addr.sin_addr);
+        int puerto=ntohs(addr.sin_port);
+        ClientId c;
+        //c.ip=ipFrom;
+        strcpy(c.ip, ipFrom);
+        c.puerto=puerto;
+        //TODO chequear que los nuevos clientes no jodan
+        if((*tablaClientes)[c]==false){ //TODO chequear que ack correcto
+          (*tablaClientes)[c]=true;
+          ackRecibidosOk++;
+        }
+
+        // if( (strcmp(ipFrom, ip)==0) && (mensajeRcb->esAck) &&  (mensajeRcb->seq==seqEsperado)){
+        //   //mismo ip
+        //   updateSequenceNumber(emisor, ip, (++seqEsperado)%2);
+        //   printf("DEBUG::Mensaje enviado: %s\n", mensaje->mensaje);
+        //   return ;
+        // }
+        // else{
+        //   printf("DEBUG::Error: :(\n");
+        // }
+      }
+    }
+
+  }
+}
 
 //debria recibir como parametro ademas del mensaje
 // ip multicast
