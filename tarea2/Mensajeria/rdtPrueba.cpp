@@ -244,45 +244,38 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 //     exit(1);
 //   }
 // }
-
+int multicastSeq=0;
 void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes){
-
-      struct sockaddr_in addr;
+  //estructuras
+  struct sockaddr_in addr;
   int nbytes;
   socklen_t addrlen;
 
-  //int seqEsperado = getSequenceNumber(emisor, ip);
-
+  //armo direccion del multicast
   struct sockaddr_in addr_multicast;
   memset((char *)&addr_multicast, 0, sizeof(addr_multicast));
   addr_multicast.sin_family = AF_INET;
   addr_multicast.sin_port = htons(puerto_multicast);
   addr_multicast.sin_addr.s_addr = inet_addr(ip_multicast.c_str());
 
-
+  //armo mensaje a enviar
+  rdtMsj* mensaje = new rdtMsj;
+  memset(&mensaje , 0, sizeof(mensaje));
+  mensaje->esAck=false;
+  strcpy(mensaje->from, "esNecesario?");
+  strcpy(mensaje->mensaje, mensajeToSend);
+  mensaje->esMulticast=true;
+  mensaje->seq = multicastSeq;
   while(true){
-    //addrlen  = sizeof(addr);
-    // int result = sendto(soc, respuesta, sizeof(respuesta), 0, (struct sockaddr *)&addr, addrlen);
-
-    rdtMsj* mensaje;
-    memset(&mensaje , 0, sizeof(mensaje));
-    mensaje->esAck=false;
-    strcpy(mensaje->from, "esNecesario?");
-    strcpy(mensaje->mensaje, mensajeToSend);
-    mensaje->esMulticast=true;
-
-    mensaje->seq = 0; //FIXME getSequenceNumber(emisor, ip);
-
+    //envio mensaje a multicast
     int result = sendto(socket_servidor, mensaje, sizeof(mensaje), 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
-    //int result = sendto(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, addrlen);
-
 
     int cantClientes=tablaClientes->size();
     int ackRecibidosOk=0;
-    if(result >0){
+    if(result >0){ //si se envio el mensaje
       while(cantClientes>ackRecibidosOk){
         rdtMsj* mensajeRcb;
-        memset(&mensajeRcb , 0, sizeof(mensaje));
+        memset(mensajeRcb , 0, sizeof(&mensajeRcb));
         //envio ACK ok
         memset(&addr, 0, sizeof(addr));
         if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
@@ -293,27 +286,20 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
         char* ipFrom = inet_ntoa(addr.sin_addr);
         int puerto=ntohs(addr.sin_port);
         ClientId c;
-        //c.ip=ipFrom;
         strcpy(c.ip, ipFrom);
         c.puerto=puerto;
+        //ohla carabola
         //TODO chequear que los nuevos clientes no jodan
-        if((*tablaClientes)[c]==false){ //TODO chequear que ack correcto
+        if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) && (mensajeRcb->seq == multicastSeq) && ((*tablaClientes)[c]==false)){ //TODO chequear que ack correcto
           (*tablaClientes)[c]=true;
           ackRecibidosOk++;
         }
-
-        // if( (strcmp(ipFrom, ip)==0) && (mensajeRcb->esAck) &&  (mensajeRcb->seq==seqEsperado)){
-        //   //mismo ip
-        //   updateSequenceNumber(emisor, ip, (++seqEsperado)%2);
-        //   printf("DEBUG::Mensaje enviado: %s\n", mensaje->mensaje);
-        //   return ;
-        // }
-        // else{
-        //   printf("DEBUG::Error: :(\n");
-        // }
+      }
+      if(cantClientes == ackRecibidosOk){
+        //Todos los clientes confiramaron la recepcion del mensaje
+        multicastSeq = (multicastSeq+1) % 2;
       }
     }
-
   }
 }
 
@@ -323,6 +309,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
 // ip servidor (no seria necesario ya que es la ip que corre)
 // puerto del servidor
 // lista de clientes logueados
+
 void sendMulticast(char* mensaje){
   char buffer[MSGBUFSIZE];
   bzero(buffer,MSGBUFSIZE);
