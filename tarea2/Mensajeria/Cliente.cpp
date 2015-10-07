@@ -43,6 +43,7 @@ using namespace std;
 #define MAX_TEXTO 160
 #define MAX_NICK 20
 
+#define CR "\n"
 // const char* TestCommands[] = {CONNECTED, RELAYED_MESSAGE, PRIVATE_MESSAGE, RELAYED_MESSAGE, "Wednesday", RELAYED_MESSAGE, PRIVATE_MESSAGE, GOODBYE};
 // const int NumberTest = 8;
 

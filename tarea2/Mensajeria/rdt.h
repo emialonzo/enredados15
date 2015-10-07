@@ -24,4 +24,11 @@ void iniServer();
 void sendMulticast(char* mensaje); //habria que pasarle lista de conectados, como desacoplamos las capas?
 void rdt_send(char* datos);
 
+
+
+int rdt_crearSocket(int puerto, bool multicast);
+int rdt_sendTo(int soc, char* mensajeToSend, char* ip, int puerto);
+
+void rdt_cerrarSocket(int sock);
+
 #endif	/* RDT_H */
