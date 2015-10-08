@@ -112,7 +112,7 @@ void updateSequenceNumber(TablaSecuencias* tabla, char* ip, int num){
   (*tabla)[ip]=num;
 }
 
-char* rdt_recibe(int soc, char* ipEmisor, int& puertoEmisor){
+char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
   socklen_t addrlen;
@@ -150,6 +150,9 @@ char* rdt_recibe(int soc, char* ipEmisor, int& puertoEmisor){
       int newSeq = (++seqEsperado)%2;
       // it->second = newSeq;
       updateSequenceNumber(receptor, ipFrom, newSeq);
+      ipEmisor = new char[MAX_IP_LENGTH];
+      strcpy(ipEmisor, ipFrom);
+      puertoEmisor = ntohs(addr.sin_port);
       //todo ok :)
       printf("DEBUG::Mensaje recibido: %s\n", mensaje->mensaje);
       char* retMen = new char[MSGBUFSIZE];
