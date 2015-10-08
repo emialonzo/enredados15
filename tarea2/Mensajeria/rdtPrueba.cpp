@@ -285,13 +285,12 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
 
         char* ipFrom = inet_ntoa(addr.sin_addr);
         int puerto=ntohs(addr.sin_port);
-        ClientId c;
-        strcpy(c.ip, ipFrom);
-        c.puerto=puerto;
-        //ohla carabola
+        char* claveCliente = new char[20];
+        sprintf(claveCliente, "%s:%d", ipFrom, puerto);
+
         //TODO chequear que los nuevos clientes no jodan
-        if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) && (mensajeRcb->seq == multicastSeq) && ((*tablaClientes)[c]==false)){ //TODO chequear que ack correcto
-          (*tablaClientes)[c]=true;
+        if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) && (mensajeRcb->seq == multicastSeq) && ((*tablaClientes)[claveCliente]==false)){ //TODO chequear que ack correcto
+          (*tablaClientes)[claveCliente]=true;
           ackRecibidosOk++;
         }
       }
@@ -309,7 +308,6 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
 // ip servidor (no seria necesario ya que es la ip que corre)
 // puerto del servidor
 // lista de clientes logueados
-
 void sendMulticast(char* mensaje){
   char buffer[MSGBUFSIZE];
   bzero(buffer,MSGBUFSIZE);

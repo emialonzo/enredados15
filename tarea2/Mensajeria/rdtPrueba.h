@@ -10,6 +10,7 @@
 
 #include "constantes.h"
 #include <map>
+#include <string.h>
  using namespace std;
 
 // typedef struct {
@@ -20,20 +21,8 @@
 //   char mensaje[MAX_RDT_MSJ];
 // } rdtMsj;
 
-typedef struct{
-  char ip[MAX_IP_LENGTH];
-  int puerto;
-}ClientId;
 
-struct ClientIdCompare
-{
-   bool operator() (const ClientId& lhs, const ClientId& rhs)
-   {
-       return lhs.puerto < rhs.puerto;
-   }
-};
-
-typedef map<ClientId, bool> TablaClienteId;
+typedef map<char*, bool> TablaClienteId;
 
 void iniRdt();
 char* recibir();
