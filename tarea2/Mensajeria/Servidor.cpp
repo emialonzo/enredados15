@@ -40,10 +40,7 @@ typedef struct Cliente {
         int cantMensajes;//Es neecesario?
         time_t ult_actividad;
 } Cliente;
-typedef struct Servidor {
-        int cantMensajes;
-        int cantClientes;
-} Servidor;
+
 typedef struct Mensaje {
         char  destino[MAX_IP_LENGTH];
         int   dest_puerto;
@@ -58,7 +55,7 @@ typedef map<string, Cliente*> MapClientes;
 typedef enum  {COM_LOGIN, COM_LOGOUT, COM_GET_CONNECTED, COM_MSG, COM_PVT_MSG, COM_INVALID} MsgComand;
 
 MapClientes* Clientes = new MapClientes;
-Servidor* servidor = new Servidor;
+
 
 time_t start = time(0);
 
@@ -80,6 +77,8 @@ pthread_mutex_t clientesMutex;
 int socEmisor = 0;
 int socReceptor = 0;
 
+int cantMensajes = 0;
+int cantConexiones = 0;
 
 
 void loginCliente(Cliente* c) {
@@ -116,10 +115,8 @@ TablaClienteId* getClientesIdForMulticast(){
 Cliente* getClienteByNick(const char* nick) {
         Cliente * ret = NULL;
         map<string, Cliente*>::iterator iter = Clientes->begin();
-
         while (iter != Clientes->end()) {
                 ret = iter->second;
-
                 if (strcmp(ret->nick, nick) == 0) {
                         return ret;
                 }
@@ -155,20 +152,23 @@ void encolarMensaje(Mensaje* mensaje) {
 char* getConected(){
         char* retStr = new char[MAX_LARGO_MENSAJE];
         MapClientes::iterator it = Clientes->begin();
-        //TODO si el diccionario esta vacio revienta
-        if(Clientes->size()==1){
-          strcat(retStr, it->second->nick);
-        }
-        else{
-          strcat(retStr, it->second->nick);
-          ++it;
-          while(it != Clientes->end()) {
-                  strcat(retStr, "|");
+        if (it != Clientes->end()) {
+                if(Clientes->size()==1){
+                  strcat(retStr, it->second->nick);
+                }
+                else{
                   strcat(retStr, it->second->nick);
                   ++it;
-          }
+                  while(it != Clientes->end()) {
+                          strcat(retStr, "|");
+                          strcat(retStr, it->second->nick);
+                          ++it;
+                  }
+                }
         }
-
+        else {
+                sprintf(retStr, "<No hay usuarios conectados>");
+        }
         return retStr;
 }
 
@@ -200,9 +200,9 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 cli->cantMensajes = 0;
                 cli->puerto = puerto;
                 cli->ult_actividad = time(0);
-
                 Clientes->insert(make_pair(cli->ip, cli));
                 pthread_mutex_unlock(&clientesMutex);
+                cantConexiones++;
                 return 0;
         }
         pthread_mutex_unlock(&clientesMutex);
@@ -210,7 +210,6 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
 }
 
 int processLogut(char* ip, int puerto) {
-        //FIXME aca hay que
         pthread_mutex_lock(&clientesMutex);
         Clientes->erase(ip);
         pthread_mutex_unlock(&clientesMutex);
@@ -364,19 +363,20 @@ void* debugRdt(){
 };
 
 void clientesConectados(){
-        //TODO
-        cout << getConected() << endl;
+        pthread_mutex_lock(&clientesMutex);
+        char * conectados =  getConected();
+        pthread_mutex_unlock(&clientesMutex);
+        cout << conectados << endl;
 }
 void mensajesEnviados(){
-        //TODO
-        cout << "TODO" << endl;
+        cout << "Mensajes enviados: " << cantMensajes << endl;
 }
 void conexionesTotales(){
-        //TODO
-        cout << "TODO" << endl;
+
+        cout << "Cantidad de conexiones totales: "<< cantConexiones << endl;
 }
 void tiempoEjecucion(){
-        //TODO
+
         double seconds_since_start;
         seconds_since_start = difftime( time(0), start);
         std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
@@ -446,6 +446,7 @@ void* emisorMensajes(void*) {
                         //FIXME esto es de test aca se hace unicast
                         test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
                 }
+                cantMensajes++;
 
         }
         return NULL;
@@ -529,6 +530,7 @@ void init() {
         pthread_mutex_init(&queueMutex, NULL);
         pthread_cond_init (&emitCond, NULL);
         pthread_mutex_init(&clientesMutex, NULL);
+
 
 
 
