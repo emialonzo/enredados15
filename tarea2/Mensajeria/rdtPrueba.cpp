@@ -155,6 +155,7 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
 
     cout << "__DEBUG rdt_recibe envio=>" ;
     printMensaje(respuesta);
+    addrlen  = sizeof(addr);
     int result = sendto(soc, respuesta, sizeof(*respuesta), 0, (struct sockaddr *)&addr, addrlen);
 
     if( (result>0) && (seqEsperado == mensaje->seq)){ //(&& result > 0 )
@@ -239,7 +240,7 @@ int multicastSeq=0;
 void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes){
   struct sockaddr_in addr;
   int nbytes;
-  socklen_t addrlen = sizeof(addrlen);
+  socklen_t addrlen = sizeof(struct sockaddr_in);
 
   //armo direccion del multicast
   struct sockaddr_in addr_multicast;
@@ -278,7 +279,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
 
       while(cantClientes>ackRecibidosOk){
         memset(mensajeRcb , 0, sizeof(*mensajeRcb));
-        memset(&addr, 0, sizeof(addr));
+        memset(&addr, 0, sizeof(struct sockaddr_in));
         cout << "__DEBUG espero ack" << endl;
         if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
           cout << "Error extranio" << endl;
