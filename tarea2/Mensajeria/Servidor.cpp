@@ -187,7 +187,7 @@ int processGetConnectedMsg(char* ip, int puerto) {
     cli->ult_actividad = time(0);
     sprintf(contenido, "%s %s", CONNECTED, getConected());
     pthread_mutex_unlock(&clientesMutex);
-    Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
+    Mensaje* mensaje = crearMensaje(ip, 8888, false, contenido);
     encolarMensaje(mensaje);
     return 0;
   }
