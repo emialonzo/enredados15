@@ -36,8 +36,8 @@ using namespace std;
 #define PRIVATE_MESSAGE "PRIVATE_MESSAGE"
 
 // puertos para los sockets del cliente
-#define PUERTO_COMANDO 8888
-#define PUERTO_MENSAJES 9999
+#define PUERTO_COMANDO 9999
+#define PUERTO_MENSAJES 8888
 
 // constantes
 #define MAX_LARGO_MENSAJE 200
@@ -75,9 +75,9 @@ void * receptorMensajes(void*) {
   while (!meVoy) {
 
     //recibo y parseo mensaje, se bloquea hasta que recibe un mensaje
-    cout << "Espero por mensaje" << endl;
+    cout << " Espero por mensaje..." << endl;
     comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
-    printf("Mensaje (%d) recibido :: %s ::\n", i, comando);
+    printf("¡¡Mensaje (%d) recibido :: %s ::!!\n", i, comando);
     printf("Origen del mensaje: %s:%d", ipEmisor, puertoEmisor);
     if (strcmp(comando, RELAYED_MESSAGE) == 0) {
       cout << "Mensaje multicast: " << comando << endl;

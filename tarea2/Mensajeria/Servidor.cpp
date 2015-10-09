@@ -464,7 +464,9 @@ void* receptorMensajes(void*) {
                 //appMsg* msg = test_rdt_rcv(socReceptor);
                 char* ipEmisor;
                 int puertoEmisor;
+                cout << "Esperando comando de cliente..." << endl;
                 char* msg = rdt_recibe(socReceptor, ipEmisor, puertoEmisor);
+                cout << "  **Comando recibido:" << msg << "**" << endl;
 
                 MsgComand command = getCommandFromMsg(msg);
 

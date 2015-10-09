@@ -16,7 +16,7 @@
 
 using namespace std;
 
-#define DEBUG 0
+#define DEBUG true
 
 //global vars
 string usuario(USUARIO);
@@ -141,9 +141,9 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
     addrlen  = sizeof(addr);
 
     //recibimos UDP
-    cout << "__DEBUG rdt_recive RECIBIR" << endl;
-    cout << "__DEBUG ERROR" << endl;
+    if(DEBUG) cout << "__DEBUG rdt_recive RECIBIR" << endl;
     if ((nbytes = recvfrom(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
+      if(DEBUG) cout << "__DEBUG ERROR" << endl;
       perror("recvfrom");
       exit(1);
     }
