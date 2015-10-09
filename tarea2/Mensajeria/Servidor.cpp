@@ -157,10 +157,10 @@ char* getConected(){
         return retStr;
 }
 
-int processGetConnectedMsg(char* ip) {
+int processGetConnectedMsg(char* ip, int puerto) {
         char contenido[MAX_TEXTO];
         sprintf(contenido, "%s %s", CONNECTED, getConected());
-        Mensaje* mensaje = crearMensaje(ip, false, contenido);
+        Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
         encolarMensaje(mensaje);
         return 0;
 }
