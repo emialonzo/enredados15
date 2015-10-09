@@ -15,7 +15,8 @@
 time_t start = time(0);
 using namespace std;
 
-#include "rdt.h"
+#include "rdtPrueba.h"
+//#include "rdt.h"
 #include "constantes.h"
 
 //FIXME esto es para probar tiene que volar
@@ -26,6 +27,7 @@ using namespace std;
 #define CONNECTED "CONNECTED"
 #define GOODBYE "GOODBYE"
 
+int socketMulticast;
 
 typedef struct Cliente {
         char nick[50];
@@ -89,6 +91,18 @@ Cliente* getCliente(char* ip){
         }
 }
 
+TablaClienteId* getClientesIdForMulticast(){
+  TablaClienteId* tabla = new TablaClienteId;
+  MapClientes::iterator it = Clientes->begin();
+  char auxStr[MSGBUFSIZE];
+  while(it != Clientes->end()) {
+    //lleno la tabla con ["ip:puerto"]=flase
+    sprintf(auxStr, "%s:%d", it->second->ip, it->second->puerto);
+    tabla->insert(make_pair(auxStr, false));
+    ++it;
+  }
+  return tabla;
+}
 
 //Se tiene que llamar con el mutex de clientes ya pedido
 Cliente* getClienteByNick(const char* nick) {
@@ -168,6 +182,7 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 nick = nick.substr(nick.find(" ") + 1);
                 strcpy(cli->nick, nick.c_str());
                 strcpy(cli->ip, ip);
+                cli->cantMensajes = 0;
                 cli->puerto = puerto;
                 cli->ult_actividad = time(0);
 
@@ -193,6 +208,7 @@ int processLogut(char* ip, int puerto) {
 int processMulticastMessage(char* sourceIp, char* recv_msg) {
         pthread_mutex_lock(&clientesMutex);
         map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
+
         if (iter != Clientes->end()) {
                 Cliente* cli = iter->second;
                 pthread_mutex_unlock(&clientesMutex);
@@ -217,7 +233,6 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
         map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
 
         if (iter != Clientes->end()) {
-
                 Cliente* cli = iter->second;
                 string str_recv_msg = recv_msg;
 
@@ -250,11 +265,12 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 void parseMessage(Cliente* c, char* mensaje){
         string comando = mensaje;
 
-        if (comando.find(LOGIN) == 0) {
-                //obtengo nombre de usuario
-                strcpy(c->nick,mensaje);
-                loginCliente(c);
-        } else if (comando.find(LOGOUT) == 0) {
+        // if (comando.find(LOGIN) == 0) {
+        //         //obtengo nombre de usuario
+        //         strcpy(c->nick,mensaje);
+        //         loginCliente(c);
+        // } else
+        if (comando.find(LOGOUT) == 0) {
                 //desloegueo al usuario
                 logOut(c);
         } else if (comando.find(GET_CONNECTED) == 0) {
@@ -318,13 +334,19 @@ void* debugRdt(){
         getline(cin, comando);
         char* mensaje = new char[MAX_LARGO_MENSAJE];
         strcpy(mensaje, comando.c_str());
-        sendMulticast(mensaje);
+        char* mensajeToSend = new char[50];
+        strcpy(mensajeToSend, "MESSAGE Debug multicast");
+        TablaClienteId* tablaClientes = getClientesIdForMulticast();
+
+        cout << "DEBUG:::enviado" << endl;
+        //rdt_send_multicast(socketMulticast, mensajeToSend , tablaClientes);
+        //sendMulticast(mensaje);
         return NULL;
 };
 
 void clientesConectados(){
         //TODO
-        cout << "TODO" << endl;
+        cout << getConected() << endl;
 }
 void mensajesEnviados(){
         //TODO
@@ -335,6 +357,7 @@ void conexionesTotales(){
         cout << "TODO" << endl;
 }
 void tiempoEjecucion(){
+        //TODO
         double seconds_since_start;
         seconds_since_start = difftime( time(0), start);
         std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
@@ -447,8 +470,9 @@ void* receptorMensajes(void*) {
  *
  */
 
+
 void init() {
-        iniServer();
+
         test_init();
 
         pthread_mutex_init(&queueMutex, NULL);
@@ -469,6 +493,7 @@ int main(int argc, char** argv) {
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
         consola();
+
 
         return 0;
 }

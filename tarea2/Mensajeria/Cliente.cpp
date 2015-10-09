@@ -17,7 +17,8 @@
 #include <iostream>
 
 // definido por nosotos
-#include "rdt.h"
+#include "rdtPrueba.h"
+//#include "rdt.h"
 
 using namespace std;
 
@@ -43,7 +44,7 @@ using namespace std;
 #define MAX_TEXTO 160
 #define MAX_NICK 20
 
-#define CR "\n"
+// #define CR "\n"
 // const char* TestCommands[] = {CONNECTED, RELAYED_MESSAGE, PRIVATE_MESSAGE, RELAYED_MESSAGE, "Wednesday", RELAYED_MESSAGE, PRIVATE_MESSAGE, GOODBYE};
 // const int NumberTest = 8;
 
@@ -58,10 +59,16 @@ void * receptorMensajes(void*) {
   printf("Principio del hilo de recepcion de mensajes.\n");
   int i = 0;
   //char* comando; //= new char[50];
-  char comando[MAX_LARGO_MENSAJE]; //= new char[50];
-  memset(comando,0,MAX_LARGO_MENSAJE);
+  // char comando[MAX_LARGO_MENSAJE]; //= new char[50];
+  // memset(comando,0,MAX_LARGO_MENSAJE);
+  char* comando;
+
   //iniRdt();
-  printf("voy a entrar al loop del receptor\n");
+  printf("voy a entrar al loop del receptor, puerto cliente:%d\n", PUERTO_CLIENTE);
+
+  int socketCliente = CrearSocket(PUERTO_CLIENTE, false);
+  char* ipEmisor;
+  int puertoEmisor;
 
   while (!meVoy) {
 
@@ -70,7 +77,9 @@ void * receptorMensajes(void*) {
 
     //comando = rdt_receive();
     //comando = recibir();
-    strcat(comando,"cpomadno");
+    cout << "Espero por mensaje" << endl;
+    comando = rdt_recibe(socketCliente,  ipEmisor, puertoEmisor);
+    // strcat(comando,"cpomadno");
     printf("Mensaje (%d) recibido :: %s ::\n", i, comando);
     if (strcmp(comando, RELAYED_MESSAGE) == 0) {
       //obtenego emisor
@@ -90,8 +99,8 @@ void * receptorMensajes(void*) {
     }
 
     //cerr << ":::DEBUGS_HILOS:::" << comando << endl;
-    unsigned int seconds = 4;
-    sleep(seconds);
+    // unsigned int seconds = 4;
+    // sleep(seconds);
     i++;
 
   }
@@ -163,7 +172,7 @@ void mensajeria() {
 int main(int argc, char** argv) {
 
   // cargo los parametros (apodo, IP y puerto del servidor)
-
+  mensajeria();
   int puertoComandos(PUERTO_COMANDO);
   int puertoMensajes(PUERTO_MENSAJES);
 
@@ -177,8 +186,9 @@ int main(int argc, char** argv) {
   puertoServidor = atoi(argv[3]);
 
   // creo los sockets que va a usar
-  int socketMensajes = rdt_crearSocket(puertoMensajes, true);
-  int socketComandos = rdt_crearSocket(puertoComandos, false);
+  int socketMensajes = CrearSocket(puertoMensajes, true);
+  int socketComandos = CrearSocket(puertoComandos, false);
+
   if (socketMensajes < 0 || socketComandos < 0) {
     printf("No se pudo iniciar el cliente");
     exit(0);
@@ -187,26 +197,26 @@ int main(int argc, char** argv) {
   // Me logueo, armo el mensaje para el servidor con mis datos (IP y puerto).
   // rdt_send(LOGIN)
 
-  char login[MAX_LARGO_MENSAJE];
-  memset(&login, 0, MAX_LARGO_MENSAJE);
-  strcat(login, "LOGIN ");
-  strcat(login, apodo);
-  strcat(login, CR);
-
-  printf("Mensaje de logueo: %s\n", login);
-
-  int result = rdt_sendTo(socketComandos, login, IPservidor, puertoServidor);
-  if (result < 0) {
-    printf("No se pudo iniciar sesion\n");
-    exit(0);
-  }
-
-  printf("Su nombre de usuario es: %s y su servidor es %s:%d\n", apodo, IPservidor,puertoServidor);
-
-  // Empiezo a enviar y recibir mensajes (hasta LOGOUT)
-  //mensajeria();
-  rdt_cerrarSocket(socketComandos);
-  rdt_cerrarSocket(socketMensajes);
+  // char login[MAX_LARGO_MENSAJE];
+  // memset(&login, 0, MAX_LARGO_MENSAJE);
+  // strcat(login, "LOGIN ");
+  // strcat(login, apodo);
+  // strcat(login, CR);
+  //
+  // printf("Mensaje de logueo: %s\n", login);
+  //
+  // int result = rdt_sendTo(socketComandos, login, IPservidor, puertoServidor);
+  // if (result < 0) {
+  //   printf("No se pudo iniciar sesion\n");
+  //   exit(0);
+  // }
+  //
+  // printf("Su nombre de usuario es: %s y su servidor es %s:%d\n", apodo, IPservidor,puertoServidor);
+  //
+  // // Empiezo a enviar y recibir mensajes (hasta LOGOUT)
+  // //mensajeria();
+  // rdt_cerrarSocket(socketComandos);
+  // rdt_cerrarSocket(socketMensajes);
 
   return 0;
 }

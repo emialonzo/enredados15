@@ -9,15 +9,7 @@ typedef struct {
   bool esAck;
   int seq;
   char mensaje[MAX_RDT_MSJ];
-} rdtMsj; 
-
-char* getFrom(rdtMsj);
-bool esMulticast(rdtMsj);
-bool esAck(rdtMsj);
-int getSeq(rdtMsj);
-bool getMensaje(rdtMsj);
-
-
+} rdtMsj;
 
 
 #endif	/* MENSAJE_H */

@@ -18,16 +18,18 @@ using namespace std;
 string usuario(USUARIO);
 
 string ip_multicast(IP_MULTICAST);
- int puerto_multicast(PUERTO_MULTICAST);
+int puerto_multicast(PUERTO_MULTICAST);
 
 string ip_cliente(IP_CLIENTE);
- int puerto_cliente(PUERTO_CLIENTE);
+int puerto_cliente(PUERTO_CLIENTE);
 
 string ip_servidor(IP_SERVIDOR);
- int puerto_servidor(PUERTO_SERVIDOR);
+int puerto_servidor(PUERTO_SERVIDOR);
 //fin global vars
 
-
+void rdt_send(char* datos){
+        cout << "Send RDT:::" << datos << ":::" << endl;
+}
 
 int socket_cliente;
 struct sockaddr_in addr;
@@ -103,24 +105,24 @@ void iniServer(){
         }
         cout << "Se bindeo bien el socket" << endl;
 }
-// void sendMulticast(char* mensaje){
-//         char buffer[MSGBUFSIZE];
-//         bzero(buffer,MSGBUFSIZE);
-//         strcat(buffer, mensaje);
-//
-//         struct sockaddr_in addr_multicast;
-//         memset((char *)&addr_multicast, 0, sizeof(addr_multicast));
-//         addr_multicast.sin_family = AF_INET;
-//         addr_multicast.sin_port = htons(puerto_multicast);
-//         addr_multicast.sin_addr.s_addr = inet_addr(ip_multicast.c_str());
-//
-//         int result = sendto(socket_servidor, buffer, strlen(buffer), 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
-//
-//         if (result < 0) {
-//                 cout << "algo no salio bien cuando mandamos el mensaje." << endl;
-//                 perror("algo no salio bien cuando mandamos el mensaje.");
-//                 exit(1);
-//         } else {
-//                 printf("se enviaron %d bytes\n", result);
-//         }
-// }
+void sendMulticast(char* mensaje){
+        char buffer[MSGBUFSIZE];
+        bzero(buffer,MSGBUFSIZE);
+        strcat(buffer, mensaje);
+
+        struct sockaddr_in addr_multicast;
+        memset((char *)&addr_multicast, 0, sizeof(addr_multicast));
+        addr_multicast.sin_family = AF_INET;
+        addr_multicast.sin_port = htons(puerto_multicast);
+        addr_multicast.sin_addr.s_addr = inet_addr(ip_multicast.c_str());
+
+        int result = sendto(socket_servidor, buffer, strlen(buffer), 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
+
+        if (result < 0) {
+                cout << "algo no salio bien cuando mandamos el mensaje." << endl;
+                perror("algo no salio bien cuando mandamos el mensaje.");
+                exit(1);
+        } else {
+                printf("se enviaron %d bytes\n", result);
+        }
+}
