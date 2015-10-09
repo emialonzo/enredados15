@@ -21,7 +21,7 @@ using namespace std;
 #include "constantes.h"
 
 //FIXME esto es para probar tiene que volar
-#include "rdt_test.h"
+//#include "rdt_test.h"
 
 #define RELAYED_MESSAGE "RELAYED_MESSAGE"
 #define PRIVATE_MESSAGE "PRIVATE_MESSAGE"
@@ -357,7 +357,7 @@ void* debugRdt(){
         TablaClienteId* tablaClientes = getClientesIdForMulticast();
 
         cout << "DEBUG:::enviado" << endl;
-        //rdt_send_multicast(socketMulticast, mensajeToSend , tablaClientes);
+        rdt_send_multicast(socketMulticast, mensajeToSend , tablaClientes);
         //sendMulticast(mensaje);
         return NULL;
 };
@@ -418,7 +418,7 @@ int consola() {
 
 void* emisorMensajes(void*) {
         //FIXME aca no tengo claro que pasarle.
-        socEmisor = crearSocket(puertoMulticast, false);
+        socEmisor = CrearSocket(puertoMulticast, false);
         while (true) {
                 //mutex_lock
                 pthread_mutex_lock(&queueMutex);
@@ -434,18 +434,21 @@ void* emisorMensajes(void*) {
                 //mutex_unlock
                 pthread_mutex_unlock(&queueMutex);
 
-                appMsg* rdt_msg = new appMsg();
+                /*appMsg* rdt_msg = new appMsg();
                 strcpy(rdt_msg->mensaje, msg->msg);
-                strcpy(rdt_msg->source_ip, msg->origen);
-
+                strcpy(rdt_msg->source_ip, msg->origen);*/
+                pthread_mutex_lock(&clientesMutex);
                 if (msg->multicast) {
                         //FIXME esto es de test aca se hce multicast
-                        test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+                        //test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+                        rdt_send_multicast(socEmisor, msg->msg, getClientesIdForMulticast());
                 }
                 else {
                         //FIXME esto es de test aca se hace unicast
-                        test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+                        //test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+                        rdt_sendto(socEmisor, msg->msg, msg->destino, msg->dest_puerto);
                 }
+                pthread_mutex_unlock(&clientesMutex);
                 cantMensajes++;
 
         }
@@ -454,28 +457,31 @@ void* emisorMensajes(void*) {
 
 
 void* receptorMensajes(void*) {
-        socReceptor = crearSocket(puertoServidor, false);
+        socReceptor = CrearSocket(puertoServidor, false);
         while (true) {
                 //FIXME esto es un test, aca va rdt_rvc
-                appMsg* msg = test_rdt_rcv(socReceptor);
+                //appMsg* msg = test_rdt_rcv(socReceptor);
+                char* ipEmisor;
+                int puertoEmisor;
+                char* msg = rdt_recibe(socReceptor, ipEmisor, puertoEmisor);
 
-                MsgComand command = getCommandFromMsg(msg->mensaje);
+                MsgComand command = getCommandFromMsg(msg);
 
                 switch (command) {
                         case COM_LOGIN:
-                                processLoginMsg(msg->source_ip, msg->source_port, msg->mensaje);
+                                processLoginMsg(ipEmisor, puertoEmisor, msg);
                                 break;
                         case COM_GET_CONNECTED:
-                                processGetConnectedMsg(msg->source_ip, msg->source_port);
+                                processGetConnectedMsg(ipEmisor, puertoEmisor);
                                 break;
                         case COM_MSG:
-                                processMulticastMessage(msg->source_ip, msg->mensaje);
+                                processMulticastMessage(ipEmisor, msg);
                                 break;
                         case COM_PVT_MSG:
-                                processPrivatetMessage(msg->source_ip, msg->mensaje);
+                                processPrivatetMessage(ipEmisor, msg);
                                 break;
                         case COM_LOGOUT:
-                                processLogut(msg->source_ip, msg->source_port);
+                                processLogut(ipEmisor, puertoEmisor);
                                 break;
                         case COM_INVALID:
                                 //TODO ver que se hace con un caracter valido
@@ -525,14 +531,10 @@ void* receptorMensajes(void*) {
 
 void init() {
 
-        test_init();
-
+        //test_init();
         pthread_mutex_init(&queueMutex, NULL);
         pthread_cond_init (&emitCond, NULL);
         pthread_mutex_init(&clientesMutex, NULL);
-
-
-
 
 }
 
