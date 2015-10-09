@@ -576,8 +576,8 @@ int main(int argc, char** argv) {
         pthread_t emisorHilo;
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
-        pthread_t monitorHilo;
-        pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
+        //pthread_t monitorHilo;
+        //pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
 
         consola();
 
