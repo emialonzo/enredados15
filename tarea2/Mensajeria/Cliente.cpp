@@ -179,8 +179,11 @@ int main(int argc, char** argv) {
   puertoServidor = atoi(argv[3]);
 
   // creo los sockets que va a usar
+  cout << endl <<"socketMensajes-receptor" ;
   socketMensajes = CrearSocket(puertoMensajes, true);
+  cout << "socketComandos-emisor" ;
   socketComandos = CrearSocket(puertoComandos, false);
+  cout << endl;
 
   if (socketMensajes < 0 || socketComandos < 0) {
     printf("No se pudo iniciar el cliente");
