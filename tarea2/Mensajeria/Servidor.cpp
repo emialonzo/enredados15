@@ -545,11 +545,11 @@ int main(int argc, char** argv) {
   //FIXME
   char* ipClientePrueba = new char[MAX_IP_LENGTH];
   char* msjPrueba = new char[MAX_IP_LENGTH];
-  strcpy(ipClientePrueba,"127.0.0.1");
+  strcpy(ipClientePrueba,"172.16.105.50");
   strcpy(msjPrueba,"LOGIN Debug");
   processLoginMsg(ipClientePrueba,8888, msjPrueba);
   //DEBUG
-  
+
         //FIXME aca no tengo claro que pasarle.
         std::cout << "socEmisor:" ;
         socEmisor = CrearSocket(9999, false);

@@ -11,7 +11,8 @@
 #include "constantes.h"
 #include <map>
 #include <string.h>
- using namespace std;
+#include <string>
+using namespace std;
 
 // typedef struct {
 //   char from[MAX_IP_LENGTH];
@@ -34,7 +35,7 @@
 
 
 
-typedef map<char*, bool> TablaClienteId;
+typedef map<string, bool> TablaClienteId;
 
 int CrearSocket(int puerto, bool multicast);
 char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor);

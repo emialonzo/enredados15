@@ -37,7 +37,7 @@ void printMensaje(rdtMsj* m){
 }
 
 //mapa con clave ip y numero de secuancia
-typedef map<char*, int> TablaSecuencias;
+typedef map<string, int> TablaSecuencias;
 // typedef struct {
 TablaSecuencias* emisor = new TablaSecuencias;
 TablaSecuencias* receptor = new TablaSecuencias;
@@ -89,7 +89,19 @@ int getPuerto(char* clienteId){
   return 0;
 }
 
+void printTablaCliente(TablaClienteId* tabla){
+  TablaClienteId::iterator it = tabla->begin();
+  int i = 0;
+  while(it != tabla->end()) {
+    //lleno la tabla con ["ip:puerto"]=flase
+    cout << i <<")TablaClienteId[" << it->first << "]=" << it->second << endl;
+    it++;
+  }
+}
+
 bool getClienteRecibioTablaMulticast(TablaClienteId* tabla, char* clienteId){
+  printTablaCliente(tabla);
+  cout << "__DEBUG getClienteRecibioTablaMulticast(" << clienteId << ")" << endl;
   TablaClienteId::iterator it = tabla->find(clienteId);
   if(it == tabla->end()){
     return false;
@@ -128,7 +140,7 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
 
     //recibimos UDP
     cout << "__DEBUG rdt_recive RECIBIR" << endl;
-      cout << "__DEBUG ERROR" << endl;
+    cout << "__DEBUG ERROR" << endl;
     if ((nbytes = recvfrom(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
       perror("recvfrom");
       exit(1);
@@ -294,10 +306,11 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
         char* claveCliente = new char[20];
         sprintf(claveCliente, "%s:%d", ipFrom, puerto);
 
-        bool clienteRecibio=getClienteRecibioTablaMulticast(tablaClientes, claveCliente);
+        bool clienteEsta = getClienteRecibioTablaMulticast(tablaClientes, claveCliente);
         std::cout << "__DEBUG ipFrom:" << ipFrom << " puerto:" << puerto << " claveCliente:" << claveCliente << std::endl;
-        std::cout << "(mensajeRcb->esAck):" << (mensajeRcb->esAck) <<  " (mensajeRcb->esMulticast):" << (mensajeRcb->esMulticast) <<  " (mensajeRcb->seq == multicastSeq):" << (mensajeRcb->seq == multicastSeq) << " (clienteRecibio==false):" << (clienteRecibio==false)  << std::endl;
-        if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) && (mensajeRcb->seq == multicastSeq) && (clienteRecibio==false)){
+        std::cout << "(mensajeRcb->esAck):" << (mensajeRcb->esAck) <<  " (mensajeRcb->esMulticast):" << (mensajeRcb->esMulticast) <<  " (mensajeRcb->seq == multicastSeq):" << (mensajeRcb->seq == multicastSeq) << " (clienteEsta):" << (clienteEsta)  << std::endl;
+        if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) &&
+        (mensajeRcb->seq == multicastSeq) && (clienteEsta) && !((*tablaClientes)[claveCliente]) ){
           std::cout << "__ DEBUG send_multicast encontre un cliente" << std::endl;
           (*tablaClientes)[claveCliente]=true;
           ackRecibidosOk++;
