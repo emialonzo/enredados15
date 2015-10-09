@@ -15,7 +15,8 @@
 time_t start = time(0);
 using namespace std;
 
-#include "rdt.h"
+#include "rdtPrueba.h"
+// #include "rdt.h"
 #include "constantes.h"
 
 //FIXME esto es para probar tiene que volar
@@ -26,11 +27,13 @@ using namespace std;
 #define CONNECTED "CONNECTED"
 #define GOODBYE "GOODBYE"
 
+int socketMulticast;
 
 typedef struct Cliente {
         char nick[50];
         char ip[20];
         int cantMensajes;
+        int puerto;
 } Cliente;
 typedef struct Servidor {
         int cantMensajes;
@@ -78,6 +81,19 @@ Cliente* getCliente(char* ip){
                 "cliente no existe" << endl;
                 return NULL;
         }
+}
+
+TablaClienteId* getClientesIdForMulticast(){
+  TablaClienteId* tabla = new TablaClienteId;
+  MapClientes::iterator it = Clientes->begin();
+  char auxStr[MSGBUFSIZE];
+  while(it != Clientes->end()) {
+    //lleno la tabla con ["ip:puerto"]=flase
+    sprintf(auxStr, "%s:%d", it->second->ip, it->second->puerto);
+    tabla->insert(make_pair(auxStr, false));
+    ++it;
+  }
+  return tabla;
 }
 
 Cliente* getClienteByNick(const char* nick) {
@@ -144,13 +160,16 @@ int processGetConnectedMsg(char* ip) {
         return 0;
 }
 
-int processLoginMsg(char* ip, char * msg) {
+int processLoginMsg(int puerto, char* ip, char * msg) {
         if (Clientes->find(ip) == Clientes->end()) {
                 Cliente * cli = new Cliente();
                 string nick = msg;
                 nick = nick.substr(nick.find(" ") + 1);
                 strcpy(cli->nick, nick.c_str());
                 strcpy(cli->ip, ip);
+                cli->cantMensajes = 0;
+                cli->puerto = puerto;
+
                 Clientes->insert(make_pair(cli->ip, cli));
                 return 0;
         }
@@ -221,11 +240,12 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 void parseMessage(Cliente* c, char* mensaje){
         string comando = mensaje;
 
-        if (comando.find(LOGIN) == 0) {
-                //obtengo nombre de usuario
-                strcpy(c->nick,mensaje);
-                loginCliente(c);
-        } else if (comando.find(LOGOUT) == 0) {
+        // if (comando.find(LOGIN) == 0) {
+        //         //obtengo nombre de usuario
+        //         strcpy(c->nick,mensaje);
+        //         loginCliente(c);
+        // } else
+        if (comando.find(LOGOUT) == 0) {
                 //desloegueo al usuario
                 logOut(c);
         } else if (comando.find(GET_CONNECTED) == 0) {
@@ -283,13 +303,19 @@ void* debug(){
         return NULL;
 };
 
+
 void* debugRdt(){
         cout << ">";
         string comando;
         getline(cin, comando);
         char* mensaje = new char[MAX_LARGO_MENSAJE];
         strcpy(mensaje, comando.c_str());
-        sendMulticast(mensaje);
+        char* mensajeToSend = new char[50];
+        strcpy(mensajeToSend, "MESSAGE Debug multicast");
+        TablaClienteId* tablaClientes = getClientesIdForMulticast();
+
+        rdt_send_multicast(socketMulticast, mensajeToSend , tablaClientes);
+        //sendMulticast(mensaje);
         return NULL;
 };
 
@@ -383,27 +409,31 @@ void* emisorMensajes(void*) {
 
 void* receptorMensajes(void*) {
 
+int puertoEmisor;
+int socketServidorReceptor = CrearSocket(PUERTO_SERVIDOR, false);
+char* msg;
+char* ipEmisor;
         while (true) {
                 //FIXME esto es un test, aca va rdt_rvc
-                appMsg* msg = test_rdt_rcv();
-
-                MsgComand command = getCommandFromMsg(msg->mensaje);
+                //appMsg* msg = test_rdt_rcv();
+                msg = rdt_recibe(socketServidorReceptor, ipEmisor, puertoEmisor);
+                MsgComand command = getCommandFromMsg(msg);
 
                 switch (command) {
                         case COM_LOGIN:
-                                processLoginMsg(msg->source_ip, msg->mensaje);
+                                processLoginMsg(puertoEmisor,ipEmisor, msg);
                                 break;
                         case COM_GET_CONNECTED:
-                                processGetConnectedMsg(msg->source_ip);
+                                processGetConnectedMsg(ipEmisor);
                                 break;
                         case COM_MSG:
-                                processMulticastMessage(msg->source_ip, msg->mensaje);
+                                // processMulticastMessage(msg->source_ip, msg->mensaje);
                                 break;
                         case COM_PVT_MSG:
-                                processPrivatetMessage(msg->source_ip, msg->mensaje);
+                                // processPrivatetMessage(msg->source_ip, msg->mensaje);
                                 break;
                         case COM_LOGOUT:
-                                processLogut(msg->source_ip);
+                                // processLogut(msg->source_ip);
                                 break;
                         case COM_INVALID:
                                 //TODO ver que se hace con un caracter valido
@@ -418,9 +448,10 @@ void* receptorMensajes(void*) {
  *
  */
 int main(int argc, char** argv) {
+      socketMulticast = CrearSocket(PUERTO_MULTICAST,true);
 
 
-        iniServer();
+        //iniServer();
         test_init();
 
         pthread_mutex_init(&queueMutex, NULL);
@@ -431,6 +462,14 @@ int main(int argc, char** argv) {
 
         pthread_t emisorHilo;
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
+
+
+        // cout << "DEBUG!!!" << endl << endl;
+        // cout << getConected() << endls;
+        // Cliente * cli = new Cliente();
+        // Clientes->insert(make_pair(cli->ip, cli));
+        //
+        // Clientes->insert(make_pair("", _T2 __y)
 
         consola();
         /*for (int i = 0; i < 20; i++) {

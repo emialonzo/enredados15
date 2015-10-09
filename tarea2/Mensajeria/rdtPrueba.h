@@ -36,11 +36,15 @@
 
 typedef map<char*, bool> TablaClienteId;
 
-void iniRdt();
-char* recibir();
+int CrearSocket(int puerto, bool multicast);
+char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor);
+void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto);
+void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes);
 
-void iniServer();
-void sendMulticast(char* mensaje); //habria que pasarle lista de conectados, como desacoplamos las capas?
-void rdt_send(char* datos);
+// void iniRdt();
+// char* recibir();
+// void iniServer();
+// void sendMulticast(char* mensaje); //habria que pasarle lista de conectados, como desacoplamos las capas?
+// void rdt_send(char* datos);
 
 #endif	/* RDT_H */

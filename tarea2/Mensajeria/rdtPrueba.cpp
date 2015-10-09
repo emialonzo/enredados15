@@ -34,10 +34,6 @@ int socket_servidor;
 int soc_ser;
 
 
-void rdt_send(char* datos){
-  cout << "Send RDT:::" << datos << ":::" << endl;
-}
-
 //mapa con clave ip y numero de secuancia
 typedef map<char*, int> TablaSecuencias;
 // typedef struct {
@@ -278,51 +274,49 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
   delete(mensajeRcb);
 }
 
-//debria recibir como parametro ademas del mensaje
-// ip multicast
-// puerto multicast
-// ip servidor (no seria necesario ya que es la ip que corre)
-// puerto del servidor
-// lista de clientes logueados
-void sendMulticast(char* mensaje){
-  char buffer[MSGBUFSIZE];
-  bzero(buffer,MSGBUFSIZE);
-  strcat(buffer, mensaje);
-
-  struct sockaddr_in addr_multicast;
-  memset((char *)&addr_multicast, 0, sizeof(addr_multicast));
-  addr_multicast.sin_family = AF_INET;
-  addr_multicast.sin_port = htons(puerto_multicast);
-  addr_multicast.sin_addr.s_addr = inet_addr(ip_multicast.c_str());
-
-  int result = sendto(socket_servidor, buffer, strlen(buffer), 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
-
-  if (result < 0) {
-    cout << "algo no salio bien cuando mandamos el mensaje." << endl;
-    perror("algo no salio bien cuando mandamos el mensaje.");
-    exit(1);
-  } else {
-    printf("se enviaron %d bytes\n", result);
-  }
-  //deberia quedarse en un loop hasta que se reciban todos los mensajes
-
-  // sinRecibir = listaClientes;
-  // recibo:
-  // setTimeOut(x segundos);
-  // recibidos = 0;
-  // while(sinRecibir.size>0){
-  //   recvfrom(socket_servidor, buffer, strlen(buffer), 0, (struct sockaddr *)&addr, &addrlen)) < 0);
-  //   if(paquete.from in sinRecibir && isAckValid(paquete)){
-  //     sinRecibir.erase(paquete.from)
-  //   }
-  // }
-  // if(sinRecibir.size>0 && timeout && cantTimeout<MAX_TIMEOUT){
-  //   cantTimeout++;
-  //   goto recibo;
-  // }else{
-  //   error, hay al menos (sinrecibir.s)
-  // }
-
-
-
-}
+// //debria recibir como parametro ademas del mensaje
+// // ip multicast
+// // puerto multicast
+// // ip servidor (no seria necesario ya que es la ip que corre)
+// // puerto del servidor
+// // lista de clientes logueados
+// void sendMulticast(char* mensaje){
+//   char buffer[MSGBUFSIZE];
+//   bzero(buffer,MSGBUFSIZE);
+//   strcat(buffer, mensaje);
+//
+//   struct sockaddr_in addr_multicast;
+//   memset((char *)&addr_multicast, 0, sizeof(addr_multicast));
+//   addr_multicast.sin_family = AF_INET;
+//   addr_multicast.sin_port = htons(puerto_multicast);
+//   addr_multicast.sin_addr.s_addr = inet_addr(ip_multicast.c_str());
+//
+//   int result = sendto(socket_servidor, buffer, strlen(buffer), 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
+//
+//   if (result < 0) {
+//     cout << "algo no salio bien cuando mandamos el mensaje." << endl;
+//     perror("algo no salio bien cuando mandamos el mensaje.");
+//     exit(1);
+//   } else {
+//     printf("se enviaron %d bytes\n", result);
+//   }
+//   //deberia quedarse en un loop hasta que se reciban todos los mensajes
+//
+//   // sinRecibir = listaClientes;
+//   // recibo:
+//   // setTimeOut(x segundos);
+//   // recibidos = 0;
+//   // while(sinRecibir.size>0){
+//   //   recvfrom(socket_servidor, buffer, strlen(buffer), 0, (struct sockaddr *)&addr, &addrlen)) < 0);
+//   //   if(paquete.from in sinRecibir && isAckValid(paquete)){
+//   //     sinRecibir.erase(paquete.from)
+//   //   }
+//   // }
+//   // if(sinRecibir.size>0 && timeout && cantTimeout<MAX_TIMEOUT){
+//   //   cantTimeout++;
+//   //   goto recibo;
+//   // }else{
+//   //   error, hay al menos (sinrecibir.s)
+//   // }
+//
+// }
