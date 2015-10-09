@@ -5,15 +5,18 @@
 
 typedef struct {
         char source_ip[12];
+        int source_port;
         char mensaje[MAX_LARGO_MENSAJE];
 } appMsg;
 
 void test_init();
 
-appMsg* test_rdt_rcv();
+int crearSocket(int puerto, bool multicast);
 
-void test_rdt_send(appMsg *, char* dest);
+appMsg* test_rdt_rcv(int socket);
 
-void test_rdt_send_broadcast(appMsg *, char* dest);
+void test_rdt_send(int socket, appMsg *, char* dest, int puerto);
+
+void test_rdt_send_broadcast(int socket, appMsg *, char* dest, int puerto);
 
 #endif
