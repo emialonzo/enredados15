@@ -97,8 +97,9 @@ void initExpexted() {
         expected[1] = armarExpected("RELAYED_MESSAGE Tribilin Hola como va?", "225.5.4.48", 8888);
         expected[2] = armarExpected("CONNECTED Tribilin|Pep", "222.36.1.45", 6666);
         expected[3] = armarExpected("PRIVATE_MESSAGE Pep Esto es peñarol", "127.0.0.1", 1234);
-        expected[4] = armarExpected("GOODBYE", "222.36.1.45", 6666);
-        expected[5] = armarExpected("CONNECTED Tribilin", "127.0.0.1", 1234);
+        //expected[4] = armarExpected("GOODBYE", "222.36.1.45", 6666);
+        expected[4] = armarExpected("CONNECTED Tribilin", "127.0.0.1", 1234);
+        expected[5] = armarExpected("GOODBYE", "127.0.0.1", 1234);
 }
 
 void test_init() {

@@ -12,7 +12,8 @@
 #include <string>
 #include <string.h>
 #include <time.h>
-time_t start = time(0);
+#include <unistd.h> //sleep
+
 using namespace std;
 
 #include "rdtPrueba.h"
@@ -26,6 +27,9 @@ using namespace std;
 #define PRIVATE_MESSAGE "PRIVATE_MESSAGE"
 #define CONNECTED "CONNECTED"
 #define GOODBYE "GOODBYE"
+
+#define TTL_CLIENTES 15
+#define MONITOR_TIME 30
 
 int socketMulticast;
 
@@ -56,6 +60,8 @@ typedef enum  {COM_LOGIN, COM_LOGOUT, COM_GET_CONNECTED, COM_MSG, COM_PVT_MSG, C
 MapClientes* Clientes = new MapClientes;
 Servidor* servidor = new Servidor;
 
+time_t start = time(0);
+
 typedef queue<Mensaje*> ColaMensajes;
 
 ColaMensajes* colaMensajes = new ColaMensajes;
@@ -73,6 +79,8 @@ pthread_mutex_t clientesMutex;
 
 int socEmisor = 0;
 int socReceptor = 0;
+
+
 
 void loginCliente(Cliente* c) {
         Clientes->insert(make_pair(c->ip, c));
@@ -143,6 +151,7 @@ void encolarMensaje(Mensaje* mensaje) {
         pthread_mutex_unlock(&queueMutex);
 }
 
+//Hay que llamar a esta con el mutex de clientes bloqueado.
 char* getConected(){
         char* retStr = new char[MAX_LARGO_MENSAJE];
         MapClientes::iterator it = Clientes->begin();
@@ -166,11 +175,17 @@ char* getConected(){
 int processGetConnectedMsg(char* ip, int puerto) {
         char contenido[MAX_TEXTO];
         pthread_mutex_lock(&clientesMutex);
-        sprintf(contenido, "%s %s", CONNECTED, getConected());
+        if (Clientes->find(ip) != Clientes->end()) {
+                Cliente * cli = Clientes->at(ip);
+                cli->ult_actividad = time(0);
+                sprintf(contenido, "%s %s", CONNECTED, getConected());
+                pthread_mutex_unlock(&clientesMutex);
+                Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
+                encolarMensaje(mensaje);
+                return 0;
+        }
         pthread_mutex_unlock(&clientesMutex);
-        Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
-        encolarMensaje(mensaje);
-        return 0;
+        return -1;
 }
 
 int processLoginMsg(char* ip, int puerto, char * msg) {
@@ -199,9 +214,10 @@ int processLogut(char* ip, int puerto) {
         pthread_mutex_lock(&clientesMutex);
         Clientes->erase(ip);
         pthread_mutex_unlock(&clientesMutex);
-        char contenido[MAX_TEXTO] = GOODBYE;
-        Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
-        encolarMensaje(mensaje);
+        //TODO Ver si se manda un goodbye o no cuando se hace un logout
+        //char contenido[MAX_TEXTO] = GOODBYE;
+        //Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
+        //encolarMensaje(mensaje);
         return 0;
 }
 
@@ -212,6 +228,7 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
         if (iter != Clientes->end()) {
                 Cliente* cli = iter->second;
                 pthread_mutex_unlock(&clientesMutex);
+                cli->ult_actividad = time(0);
                 string str_contenido = recv_msg;
                 str_contenido = str_contenido.substr(str_contenido.find(" ") +1);
 
@@ -234,6 +251,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
         if (iter != Clientes->end()) {
                 Cliente* cli = iter->second;
+                cli->ult_actividad = time(0);
                 string str_recv_msg = recv_msg;
 
                 //Descarto el cabezal private msg
@@ -243,6 +261,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
                 const char* dest_nick = str_recv_msg.substr(0, str_recv_msg.find(" ")).c_str();
 
                 Cliente* dest_cli = getClienteByNick(dest_nick);
+                pthread_mutex_unlock(&clientesMutex);
                 if (dest_cli != NULL) {
                         //Descarto el nick y me quedo con el mensaje
                         str_recv_msg = str_recv_msg.substr(str_recv_msg.find(" ") +1);
@@ -252,7 +271,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
                         Mensaje* mensaje = crearMensaje(dest_cli->ip, dest_cli->puerto, false, contenido);
                         encolarMensaje(mensaje);
-                        pthread_mutex_unlock(&clientesMutex);
+
                         return 0;
                 }
         }
@@ -470,6 +489,38 @@ void* receptorMensajes(void*) {
  *
  */
 
+ void* monitorClientes(void* ) {
+
+         while (true) {
+                 sleep(MONITOR_TIME);
+                 pthread_mutex_lock(&clientesMutex);
+                 map<string, Cliente*>::iterator iter = Clientes->begin();
+                 queue<string> aBorrar;
+                 while (iter != Clientes->end()) {
+                         Cliente* c = iter -> second;
+                         time_t now = time(0);
+                         double dif = difftime(now, c->ult_actividad);
+
+                         if (dif > TTL_CLIENTES) {
+                                 aBorrar.push(iter->first);
+                         }
+                         iter++;
+                 }
+
+                 while (!aBorrar.empty()) {
+                         string ip = aBorrar.front();
+                         aBorrar.pop();
+                         Cliente* c  = Clientes->at(ip);
+                         Clientes->erase(ip);
+                         Mensaje * mensaje = crearMensaje(c->ip, c->puerto, false, GOODBYE);
+                         encolarMensaje(mensaje);
+                 }
+                 pthread_mutex_unlock(&clientesMutex);
+
+         }
+         return NULL;
+ }
+
 
 void init() {
 
@@ -478,6 +529,7 @@ void init() {
         pthread_mutex_init(&queueMutex, NULL);
         pthread_cond_init (&emitCond, NULL);
         pthread_mutex_init(&clientesMutex, NULL);
+
 
 
 }
@@ -492,8 +544,10 @@ int main(int argc, char** argv) {
         pthread_t emisorHilo;
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
-        consola();
+        pthread_t monitorHilo;
+        pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
 
+        consola();
 
         return 0;
 }
