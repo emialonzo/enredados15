@@ -31,9 +31,9 @@ int socketMulticast;
 
 typedef struct Cliente {
         char nick[50];
+        int puerto;
         char ip[20];
         int cantMensajes;
-        int puerto;
 } Cliente;
 typedef struct Servidor {
         int cantMensajes;
@@ -41,7 +41,9 @@ typedef struct Servidor {
 } Servidor;
 typedef struct Mensaje {
         char  destino[MAX_IP_LENGTH];
+        int   dest_puerto;
         char  origen[MAX_IP_LENGTH];
+        int   orig_puerto;
         char  msg[MAX_TEXTO];
         bool  multicast;
 
@@ -61,10 +63,13 @@ char* ipServidor = IP_SERVIDOR;
 int puertoServidor;
 
 char* ipMulticast = IP_MULTICAST;
-int puertoMulticast;
+int puertoMulticast = PUERTO_MULTICAST;
 
 pthread_mutex_t queueMutex;
 pthread_cond_t emitCond;
+
+int socEmisor = 0;
+int socReceptor = 0;
 
 void loginCliente(Cliente* c) {
         Clientes->insert(make_pair(c->ip, c));
@@ -114,7 +119,7 @@ Cliente* getClienteByNick(const char* nick) {
 
 
 
-Mensaje* crearMensaje(char* ipDestino, bool multicast, char* contenido) {
+Mensaje* crearMensaje(char* ipDestino,int puerto, bool multicast, char* contenido) {
 
         Mensaje* ret = new Mensaje();
         strcpy(ret->origen,IP_SERVIDOR);
@@ -160,7 +165,7 @@ int processGetConnectedMsg(char* ip) {
         return 0;
 }
 
-int processLoginMsg(int puerto, char* ip, char * msg) {
+int processLoginMsg(char* ip, int puerto, char * msg) {
         if (Clientes->find(ip) == Clientes->end()) {
                 Cliente * cli = new Cliente();
                 string nick = msg;
@@ -176,10 +181,10 @@ int processLoginMsg(int puerto, char* ip, char * msg) {
         return -1;
 }
 
-int processLogut(char* ip) {
+int processLogut(char* ip, int puerto) {
         Clientes->erase(ip);
         char contenido[MAX_TEXTO] = GOODBYE;
-        Mensaje* mensaje = crearMensaje(ip, false, contenido);
+        Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
         encolarMensaje(mensaje);
         return 0;
 }
@@ -196,7 +201,7 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
                 char contenido[MAX_TEXTO];
                 sprintf(contenido, "%s %s %s", RELAYED_MESSAGE, cli->nick, str_contenido.c_str());
 
-                Mensaje* mensaje = crearMensaje(ipMulticast, true, contenido);
+                Mensaje* mensaje = crearMensaje(ipMulticast, puertoMulticast, true, contenido);
                 encolarMensaje(mensaje);
                 return 0;
         }
@@ -215,7 +220,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
                 //Descarto el cabezal private msg
                 str_recv_msg = str_recv_msg.substr(str_recv_msg.find(" ") +1);
 
-                //Nick esta desde el inicio hasta el fin
+                //Nick esta desde el inicio hasta el primer espacio
                 const char* dest_nick = str_recv_msg.substr(0, str_recv_msg.find(" ")).c_str();
 
                 Cliente* dest_cli = getClienteByNick(dest_nick);
@@ -226,7 +231,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
                         char contenido[MAX_TEXTO];
                         sprintf(contenido, "%s %s %s", PRIVATE_MESSAGE, cli->nick, str_recv_msg.c_str());
 
-                        Mensaje* mensaje = crearMensaje(dest_cli->ip, false, contenido);
+                        Mensaje* mensaje = crearMensaje(dest_cli->ip, dest_cli->puerto, false, contenido);
                         encolarMensaje(mensaje);
                         return 0;
                 }
@@ -303,7 +308,6 @@ void* debug(){
         return NULL;
 };
 
-
 void* debugRdt(){
         cout << ">";
         string comando;
@@ -373,7 +377,8 @@ int consola() {
 }
 
 void* emisorMensajes(void*) {
-
+        //FIXME aca no tengo claro que pasarle.
+        socEmisor = crearSocket(puertoMulticast, false);
         while (true) {
                 //mutex_lock
                 pthread_mutex_lock(&queueMutex);
@@ -395,11 +400,11 @@ void* emisorMensajes(void*) {
 
                 if (msg->multicast) {
                         //FIXME esto es de test aca se hce multicast
-                        test_rdt_send_broadcast(rdt_msg, msg->destino);
+                        test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
                 }
                 else {
                         //FIXME esto es de test aca se hace unicast
-                        test_rdt_send(rdt_msg, msg->destino);
+                        test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
                 }
 
         }
@@ -408,32 +413,28 @@ void* emisorMensajes(void*) {
 
 
 void* receptorMensajes(void*) {
-
-int puertoEmisor;
-int socketServidorReceptor = CrearSocket(PUERTO_SERVIDOR, false);
-char* msg;
-char* ipEmisor;
+        socReceptor = crearSocket(puertoServidor, false);
         while (true) {
                 //FIXME esto es un test, aca va rdt_rvc
-                //appMsg* msg = test_rdt_rcv();
-                msg = rdt_recibe(socketServidorReceptor, ipEmisor, puertoEmisor);
-                MsgComand command = getCommandFromMsg(msg);
+                appMsg* msg = test_rdt_rcv(socReceptor);
+
+                MsgComand command = getCommandFromMsg(msg->mensaje);
 
                 switch (command) {
                         case COM_LOGIN:
-                                processLoginMsg(puertoEmisor,ipEmisor, msg);
+                                processLoginMsg(msg->source_ip, msg->source_port, msg->mensaje);
                                 break;
                         case COM_GET_CONNECTED:
-                                processGetConnectedMsg(ipEmisor);
+                                processGetConnectedMsg(msg->source_ip, msg->source_port);
                                 break;
                         case COM_MSG:
-                                // processMulticastMessage(msg->source_ip, msg->mensaje);
+                                processMulticastMessage(msg->source_ip, msg->mensaje);
                                 break;
                         case COM_PVT_MSG:
-                                // processPrivatetMessage(msg->source_ip, msg->mensaje);
+                                processPrivatetMessage(msg->source_ip, msg->mensaje);
                                 break;
                         case COM_LOGOUT:
-                                // processLogut(msg->source_ip);
+                                processLogut(msg->source_ip, msg->source_port);
                                 break;
                         case COM_INVALID:
                                 //TODO ver que se hace con un caracter valido
@@ -448,7 +449,6 @@ char* ipEmisor;
  *
  */
 int main(int argc, char** argv) {
-      socketMulticast = CrearSocket(PUERTO_MULTICAST,true);
 
 
         //iniServer();
@@ -462,14 +462,6 @@ int main(int argc, char** argv) {
 
         pthread_t emisorHilo;
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
-
-
-        // cout << "DEBUG!!!" << endl << endl;
-        // cout << getConected() << endls;
-        // Cliente * cli = new Cliente();
-        // Clientes->insert(make_pair(cli->ip, cli));
-        //
-        // Clientes->insert(make_pair("", _T2 __y)
 
         consola();
         /*for (int i = 0; i < 20; i++) {
