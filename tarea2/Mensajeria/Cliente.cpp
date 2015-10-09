@@ -37,7 +37,7 @@ using namespace std;
 
 // puertos para los sockets del cliente
 #define PUERTO_COMANDO 9999
-#define PUERTO_MENSAJES 8888
+
 
 // constantes
 #define MAX_LARGO_MENSAJE 200
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
 
   // cargo los parametros (apodo, IP y puerto del servidor)
   int puertoComandos(PUERTO_COMANDO);
-  int puertoMensajes(PUERTO_MENSAJES);
+  int puertoMensajes(PUERTO_MENSAJES_CLI);
 
   if (argc < 4) {
     printf("Uso: ./cliente <apodo> <IP servidor> <puerto servidor>\n");

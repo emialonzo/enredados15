@@ -198,7 +198,8 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 strcpy(cli->nick, nick.c_str());
                 strcpy(cli->ip, ip);
                 cli->cantMensajes = 0;
-                cli->puerto = puerto;
+                //cli->puerto = puerto;
+                cli->puerto = PUERTO_MENSAJES_CLI;
                 cli->ult_actividad = time(0);
                 Clientes->insert(make_pair(cli->ip, cli));
                 pthread_mutex_unlock(&clientesMutex);
@@ -557,9 +558,8 @@ int main(int argc, char** argv) {
   //FIXME
   char* ipClientePrueba = new char[MAX_IP_LENGTH];
   char* msjPrueba = new char[MAX_IP_LENGTH];
-  strcpy(ipClientePrueba,"172.16.105.50");
-  strcpy(msjPrueba,"LOGIN Debug");
-  processLoginMsg(ipClientePrueba,8888, msjPrueba);
+  strcpy(ipClientePrueba,"255.255.255.255");
+  strcpy(msjPrueba,"LOGIN Debug");  processLoginMsg(ipClientePrueba,8888, msjPrueba);
   //DEBUG
 
         //FIXME aca no tengo claro que pasarle.
