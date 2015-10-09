@@ -135,13 +135,15 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
     }
     cout << "__DEBUG rdt_recive nbytes" << nbytes << " sizeof(*mensaje)" << sizeof(*mensaje) << endl;
     char* ipFrom = inet_ntoa(addr.sin_addr);
+    int puerto=ntohs(addr.sin_port);
     int seqEsperado = getSequenceNumber(receptor, ipFrom);
+    std::cout << "__DEBUG rdt_recive ipFrom:" << ipFrom << " puerto:" << puerto << std::endl;
     cout << "__DEBUG rdt_recive recibi=>";
     printMensaje(mensaje);
 
     rdtMsj* respuesta = new rdtMsj;
     respuesta->esAck=true;
-    // respuesta.from = "importa?";
+    //respuesta.from = "importa?";
     // respuesta.mensaje="importa munia?";
     respuesta->esMulticast=mensaje->esMulticast;
     //envio ACK ok
