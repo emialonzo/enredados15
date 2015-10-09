@@ -1,5 +1,5 @@
 CC = g++
-FLAGS = -lpthread
+FLAGS = -lpthread -g
 IP = ifconfig wlan0 | grep 'inet:' | cut -d: -f2 | awk '{print $1}'
 
 
@@ -20,6 +20,9 @@ ejecutarServidor: .servidor
 
 ejecutarCliente: .cliente
 		./.cliente
+
+clear:
+	rm .cliente .servidor
 
 # obtenerIp:
 # 	echo IP = ifconfig wlan0 | grep 'inet:' | cut -d: -f2 | awk '{print $1}'
