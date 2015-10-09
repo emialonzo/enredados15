@@ -190,6 +190,7 @@ int processGetConnectedMsg(char* ip, int puerto) {
 }
 
 int processLoginMsg(char* ip, int puerto, char * msg) {
+
         pthread_mutex_lock(&clientesMutex);
         if (Clientes->find(ip) == Clientes->end()) {
                 Cliente * cli = new Cliente();
@@ -198,7 +199,8 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 strcpy(cli->nick, nick.c_str());
                 strcpy(cli->ip, ip);
                 cli->cantMensajes = 0;
-                cli->puerto = puerto;
+                //cli->puerto = puerto;
+                cli->puerto = PUERTO_MENSAJES_CLI;
                 cli->ult_actividad = time(0);
                 Clientes->insert(make_pair(cli->ip, cli));
                 pthread_mutex_unlock(&clientesMutex);
@@ -588,8 +590,8 @@ int main(int argc, char** argv) {
         pthread_t emisorHilo;
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
-        pthread_t monitorHilo;
-        // pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
+        //pthread_t monitorHilo;
+        //pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
 
         consola();
 

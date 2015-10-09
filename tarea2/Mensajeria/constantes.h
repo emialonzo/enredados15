@@ -35,5 +35,6 @@
 #define MAX_RDT_MSJ 100
 #define MAX_IP_LENGTH 16 //xxx.xxx.xxx.xxx
 
+#define PUERTO_MENSAJES_CLI 8888
 
 #endif	/* CONSTANTES_H */
