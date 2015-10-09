@@ -66,7 +66,7 @@ void * receptorMensajes(void*) {
   //iniRdt();
   printf("voy a entrar al loop del receptor, puerto cliente:%d\n", PUERTO_CLIENTE);
 
-  int socketCliente = CrearSocket(PUERTO_CLIENTE, false);
+  int socketCliente = CrearSocket(PUERTO_CLIENTE, true);
   char* ipEmisor;
   int puertoEmisor;
 

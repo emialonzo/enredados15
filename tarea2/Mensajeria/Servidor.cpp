@@ -417,8 +417,7 @@ int consola() {
 }
 
 void* emisorMensajes(void*) {
-        //FIXME aca no tengo claro que pasarle.
-        socEmisor = CrearSocket(puertoMulticast, false);
+
         while (true) {
                 //mutex_lock
                 pthread_mutex_lock(&queueMutex);
@@ -457,7 +456,7 @@ void* emisorMensajes(void*) {
 
 
 void* receptorMensajes(void*) {
-        socReceptor = CrearSocket(puertoServidor, false);
+
         while (true) {
                 //FIXME esto es un test, aca va rdt_rvc
                 //appMsg* msg = test_rdt_rcv(socReceptor);
@@ -541,6 +540,13 @@ void init() {
 int main(int argc, char** argv) {
 
         init();
+
+        //FIXME aca no tengo claro que pasarle.
+        std::cout << "socEmisor" << std::endl;
+        socEmisor = CrearSocket(9999, false);
+        std::cout << "socReceptor" << std::endl;
+        socReceptor = CrearSocket(puertoServidor, false);
+
 
         pthread_t receptorHilo;
         pthread_create(&receptorHilo, NULL, receptorMensajes, NULL);
