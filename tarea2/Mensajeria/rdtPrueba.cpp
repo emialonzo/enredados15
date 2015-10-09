@@ -43,21 +43,6 @@ typedef map<char*, int> TablaSecuencias;
 // typedef struct {
 TablaSecuencias* emisor = new TablaSecuencias;
 TablaSecuencias* receptor = new TablaSecuencias;
-// }Secuencias;
-//
-// Secuencias* s = new Secuencias;
-
-
-// • rdt_send(datos), recibe datos desde la capa superior.
-// • udt_send_broadcast(pkt), le entrega el paquete pkt a la capa inferior para ser transmitido a todos los
-// computadores de la red.
-// • rdt_rcv(pkt), recibe los paquetes desde la capa inferior.
-// • deliver_data(datos), entrega datos a la capa superior.
-// • make_pkt(numeroDeSecuencia, datos, checksum, origen)
-// • extract_data(pkt, datos), extrae los datos de un paquete.
-// • extract_orig(pkt, ip), extrae la dirección de origen del paquete.
-// • corrupt(pkt), verdadero sii pkt fue corrompido durante su transmisión.
-// • isACK(pkt, numeroDeSecuencia), verdadero sii pkt es un ACK con número de secuencia numeroDeSecuencia
 
 
 int CrearSocket(int puerto, bool multicast){
@@ -93,6 +78,24 @@ int CrearSocket(int puerto, bool multicast){
   return sockete;
 }
 
+char* getClienteId(char* ip, int puerto){
+  return NULL;
+}
+char* getIp(char* clienteId){
+  return NULL;
+}
+int getPuerto(char* clienteId){
+  return 0;
+}
+
+bool getClienteRecibioTablaMulticast(TablaClienteId* tabla, char* clienteId){
+  TablaClienteId::iterator it = tabla->find(clienteId);
+  if(it == tabla->end()){
+    return false;
+  }
+  return true;
+}
+
 int getSequenceNumber(TablaSecuencias* tabla, char* ipFrom){
   TablaSecuencias::iterator it = tabla->find(ipFrom);
   if(it == receptor->end()){
@@ -109,40 +112,24 @@ void updateSequenceNumber(TablaSecuencias* tabla, char* ip, int num){
   (*tabla)[ip]=num;
 }
 
-char* rdt_recibe(int soc){
+char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
   socklen_t addrlen;
 
   int nbytes;
+  rdtMsj* mensaje = new rdtMsj;
 
-  //char msgbuf[MSGBUFSIZE];
-  rdtMsj* mensaje;
-
-  // bool mensajeOk=false;
   while(true){
-
     memset(&mensaje , 0, sizeof(mensaje));
-
     addrlen  = sizeof(addr);
+
     //recibimos UDP
     if ((nbytes = recvfrom(soc, (char*) mensaje, sizeof(mensaje), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
       perror("recvfrom");
       exit(1);
     }
-
     char* ipFrom = inet_ntoa(addr.sin_addr);
-    //s->receptor->find(ipFrom);
-
-    // TablaSecuencias::iterator it = receptor->find(ipFrom);
-    // if(it == receptor->end()){
-    //   char* ip = new char[strlen(ipFrom)];
-    //   strcpy(ip, ipFrom);
-    //   receptor->insert(make_pair(ip,0));
-    //   it = receptor->find(ip);
-    //   // (*receptor)[ipFrom]=0;
-    // }
-    // int seqEsperado = it->second;
     int seqEsperado = getSequenceNumber(receptor, ipFrom);
 
     rdtMsj* respuesta = new rdtMsj;
@@ -151,7 +138,11 @@ char* rdt_recibe(int soc){
     // respuesta.mensaje="importa munia?";
     respuesta->esMulticast=mensaje->esMulticast;
     //envio ACK ok
-    respuesta->seq=seqEsperado;
+    if(mensaje->esMulticast){
+      respuesta->seq=mensaje->seq;
+    }else{
+      respuesta->seq=seqEsperado;
+    }
 
     int result = sendto(soc, respuesta, sizeof(respuesta), 0, (struct sockaddr *)&addr, addrlen);
     if( (result>0) && (seqEsperado == mensaje->seq)){ //(&& result > 0 )
@@ -159,6 +150,9 @@ char* rdt_recibe(int soc){
       int newSeq = (++seqEsperado)%2;
       // it->second = newSeq;
       updateSequenceNumber(receptor, ipFrom, newSeq);
+      ipEmisor = new char[MAX_IP_LENGTH];
+      strcpy(ipEmisor, ipFrom);
+      puertoEmisor = ntohs(addr.sin_port);
       //todo ok :)
       printf("DEBUG::Mensaje recibido: %s\n", mensaje->mensaje);
       char* retMen = new char[MSGBUFSIZE];
@@ -176,14 +170,15 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
   int nbytes;
   socklen_t addrlen;
   struct sockaddr_in addr;
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(puerto);
-  addr.sin_addr.s_addr = inet_addr(ip);
 
   int seqEsperado = getSequenceNumber(emisor, ip);
 
   while(true){
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(puerto);
+    addr.sin_addr.s_addr = inet_addr(ip);
+
     addrlen  = sizeof(addr);
     // int result = sendto(soc, respuesta, sizeof(respuesta), 0, (struct sockaddr *)&addr, addrlen);
 
@@ -222,28 +217,7 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
 }
 
-//TODO cambiar nombre de socket a socket multicast
-// void recibeServidorIni(){
-//   //creamos socket UDP
-//   soc_ser = socket(AF_INET, SOCK_DGRAM, 0);
-//   if (socket_cliente < 0) {
-//     perror("No se pudo crear el socket");
-//     exit(0);
-//   }
-//   cout << "Se creo bien el socket" << endl;
-//
-//   //se setean valores del socket, puerto, ip
-//   memset(&addr, 0, sizeof(addr));
-//   addr.sin_family = AF_INET;
-//   addr.sin_port = htons(puerto_servidor);
-//   //TODO atender unicamente ip servidor e ip multicast
-//   addr.sin_addr.s_addr = htonl(INADDR_ANY); //direccion que atiende
-//
-//   if (bind(socket_cliente,(struct sockaddr *)&addr, sizeof(addr)) < 0) {
-//     perror("bind");
-//     exit(1);
-//   }
-// }
+
 int multicastSeq=0;
 void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes){
   //estructuras
@@ -260,6 +234,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
 
   //armo mensaje a enviar
   rdtMsj* mensaje = new rdtMsj;
+  rdtMsj* mensajeRcb = new rdtMsj;
   memset(&mensaje , 0, sizeof(mensaje));
   mensaje->esAck=false;
   strcpy(mensaje->from, "esNecesario?");
@@ -274,7 +249,6 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
     int ackRecibidosOk=0;
     if(result >0){ //si se envio el mensaje
       while(cantClientes>ackRecibidosOk){
-        rdtMsj* mensajeRcb;
         memset(mensajeRcb , 0, sizeof(&mensajeRcb));
         //envio ACK ok
         memset(&addr, 0, sizeof(addr));
@@ -288,8 +262,8 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
         char* claveCliente = new char[20];
         sprintf(claveCliente, "%s:%d", ipFrom, puerto);
 
-        //TODO chequear que los nuevos clientes no jodan
-        if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) && (mensajeRcb->seq == multicastSeq) && ((*tablaClientes)[claveCliente]==false)){ //TODO chequear que ack correcto
+        bool clienteRecibio=getClienteRecibioTablaMulticast(tablaClientes, claveCliente);
+        if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) && (mensajeRcb->seq == multicastSeq) && (clienteRecibio==false)){
           (*tablaClientes)[claveCliente]=true;
           ackRecibidosOk++;
         }
@@ -300,6 +274,8 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
       }
     }
   }
+  delete(mensaje);
+  delete(mensajeRcb);
 }
 
 //debria recibir como parametro ademas del mensaje
