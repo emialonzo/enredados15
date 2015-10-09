@@ -63,10 +63,10 @@ typedef queue<Mensaje*> ColaMensajes;
 
 ColaMensajes* colaMensajes = new ColaMensajes;
 
-char* ipServidor = IP_SERVIDOR;
-int puertoServidor;
+char* ipServidor ;//= IP_SERVIDOR;
+int  puertoServidor = PUERTO_SERVIDOR;
 
-char* ipMulticast = IP_MULTICAST;
+char* ipMulticast ;//= IP_MULTICAST;
 int puertoMulticast = PUERTO_MULTICAST;
 
 pthread_mutex_t queueMutex;
@@ -353,11 +353,14 @@ void* debugRdt(){
         char* mensaje = new char[MAX_LARGO_MENSAJE];
         strcpy(mensaje, comando.c_str());
         char* mensajeToSend = new char[50];
-        strcpy(mensajeToSend, "MESSAGE Debug multicast");
-        TablaClienteId* tablaClientes = getClientesIdForMulticast();
+        strcpy(mensajeToSend, "MESSAGE Debug unicast");
+        //TablaClienteId* tablaClientes = getClientesIdForMulticast();
 
         cout << "DEBUG:::enviado" << endl;
-        rdt_send_multicast(socEmisor, mensajeToSend , tablaClientes);
+        //rdt_send_multicast(socEmisor, mensajeToSend , tablaClientes);
+        char ip[MAX_IP_LENGTH];
+        strcpy(ip, "172.16.100.75");
+        rdt_sendto(socEmisor, mensajeToSend, ip, 8888);
         //sendMulticast(mensaje);
         return NULL;
 };
@@ -406,7 +409,6 @@ int consola() {
                         // * f – tiempo (wall time) de ejecución
                         tiempoEjecucion();
                 } else if (c=='x') {
-                        // * f – tiempo (wall time) de ejecución
                         cout << "DEBUG::" ;
                         debugRdt();
                 } else {
@@ -518,7 +520,9 @@ void* receptorMensajes(void*) {
                          aBorrar.pop();
                          Cliente* c  = Clientes->at(ip);
                          Clientes->erase(ip);
-                         Mensaje * mensaje = crearMensaje(c->ip, c->puerto, false, GOODBYE);
+                         char contenido[MAX_TEXTO];
+                         strcpy(contenido, GOODBYE);
+                         Mensaje * mensaje = crearMensaje(c->ip, c->puerto, false, contenido);
                          encolarMensaje(mensaje);
                  }
                  pthread_mutex_unlock(&clientesMutex);
@@ -540,7 +544,13 @@ void init() {
 int main(int argc, char** argv) {
 
 
-        init();
+  init();
+
+  char* ipServidor = new char[MAX_IP_LENGTH];
+  strcpy(ipServidor, IP_SERVIDOR);
+  char* ipMulticast = new char[MAX_IP_LENGTH];
+  strcpy(ipMulticast, IP_MULTICAST);
+
 
   //FIXME
   char* ipClientePrueba = new char[MAX_IP_LENGTH];
@@ -552,7 +562,7 @@ int main(int argc, char** argv) {
 
         //FIXME aca no tengo claro que pasarle.
         std::cout << "socEmisor:" ;
-        socEmisor = CrearSocket(9999, false);
+        socEmisor = CrearSocket(puertoServidor+1, false);
         cout << socEmisor << std::endl;
 
         std::cout << "socReceptor" ;
