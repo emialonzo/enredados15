@@ -16,6 +16,8 @@
 
 using namespace std;
 
+#define DEBUG 0
+
 //global vars
 string usuario(USUARIO);
 
@@ -192,6 +194,8 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
 
 void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
+  if (DEBUG) cout << "rdt_sendto=> mensaje: " << mensajeToSend << " ip:" << ip << " puerto:" << puerto;
+
   int nbytes;
   socklen_t addrlen;
   struct sockaddr_in addr;
@@ -215,14 +219,14 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
     mensaje->esMulticast=false;
     mensaje->seq = getSequenceNumber(emisor, ip);
 
-    cout << "__DEBUG envio rdt a ip:" << ip << ":" << puerto << endl;
+    if (DEBUG) cout << "rdt_send enviando...";
     int result = sendto(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, addrlen);
 
     if(result >0){
       rdtMsj* mensajeRcb = new rdtMsj;
       memset(mensajeRcb , 0, sizeof(*mensajeRcb));
       //envio ACK ok
-      cout << "__DEBUG espero ack con seq:" << seqEsperado << endl;
+      if(DEBUG) cout << "rdt_send espero ACK con seq:" << seqEsperado << endl;
       if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
         perror("recvfrom");
         exit(1);
@@ -230,8 +234,10 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
       //char* ipFrom = inet_ntoa(addr.sin_addr);
       char* ipFrom = inet_ntoa(addr.sin_addr);
-      cout << "__DEBUG recibi:" ;
-      printMensaje(mensajeRcb);
+
+      if(DEBUG) cout << "rdt_send recibio mensaje:" ;
+      if(DEBUG) printMensaje(mensajeRcb);
+
       if( (strcmp(ipFrom, ip)==0) && (mensajeRcb->esAck) &&  (mensajeRcb->seq==seqEsperado)){
         //mismo ip
         updateSequenceNumber(emisor, ip, (++seqEsperado)%2);
@@ -239,7 +245,8 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
         return ;
       }
       else{
-        printf("DEBUG::Error: :(\n");
+        printf("rdt_send Error:");
+        cout << "rdt_send DEBUG values (strcmp(ipFrom, ip)==0): " << (strcmp(ipFrom, ip)==0) <<  " (mensajeRcb->esAck):" << (mensajeRcb->esAck) << " (mensajeRcb->seq==seqEsperado):" <<  (mensajeRcb->seq==seqEsperado) << endl;
       }
     }
 
