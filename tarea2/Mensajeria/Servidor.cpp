@@ -31,7 +31,8 @@ typedef struct Cliente {
         char nick[50];
         int puerto;
         char ip[20];
-        int cantMensajes;
+        int cantMensajes;//Es neecesario?
+        time_t ult_actividad;
 } Cliente;
 typedef struct Servidor {
         int cantMensajes;
@@ -66,6 +67,8 @@ int puertoMulticast = PUERTO_MULTICAST;
 pthread_mutex_t queueMutex;
 pthread_cond_t emitCond;
 
+pthread_mutex_t clientesMutex;
+
 int socEmisor = 0;
 int socReceptor = 0;
 
@@ -86,6 +89,8 @@ Cliente* getCliente(char* ip){
         }
 }
 
+
+//Se tiene que llamar con el mutex de clientes ya pedido
 Cliente* getClienteByNick(const char* nick) {
         Cliente * ret = NULL;
         map<string, Cliente*>::iterator iter = Clientes->begin();
@@ -146,13 +151,17 @@ char* getConected(){
 
 int processGetConnectedMsg(char* ip, int puerto) {
         char contenido[MAX_TEXTO];
+        pthread_mutex_lock(&clientesMutex);
         sprintf(contenido, "%s %s", CONNECTED, getConected());
+        pthread_mutex_unlock(&clientesMutex);
         Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
         encolarMensaje(mensaje);
         return 0;
 }
 
 int processLoginMsg(char* ip, int puerto, char * msg) {
+
+        pthread_mutex_lock(&clientesMutex);
         if (Clientes->find(ip) == Clientes->end()) {
                 Cliente * cli = new Cliente();
                 string nick = msg;
@@ -160,14 +169,21 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 strcpy(cli->nick, nick.c_str());
                 strcpy(cli->ip, ip);
                 cli->puerto = puerto;
+                cli->ult_actividad = time(0);
+
                 Clientes->insert(make_pair(cli->ip, cli));
+                pthread_mutex_unlock(&clientesMutex);
                 return 0;
         }
+        pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
 
 int processLogut(char* ip, int puerto) {
+        //FIXME aca hay que
+        pthread_mutex_lock(&clientesMutex);
         Clientes->erase(ip);
+        pthread_mutex_unlock(&clientesMutex);
         char contenido[MAX_TEXTO] = GOODBYE;
         Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
         encolarMensaje(mensaje);
@@ -175,11 +191,11 @@ int processLogut(char* ip, int puerto) {
 }
 
 int processMulticastMessage(char* sourceIp, char* recv_msg) {
-
+        pthread_mutex_lock(&clientesMutex);
         map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
-
         if (iter != Clientes->end()) {
                 Cliente* cli = iter->second;
+                pthread_mutex_unlock(&clientesMutex);
                 string str_contenido = recv_msg;
                 str_contenido = str_contenido.substr(str_contenido.find(" ") +1);
 
@@ -189,16 +205,19 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
                 Mensaje* mensaje = crearMensaje(ipMulticast, puertoMulticast, true, contenido);
                 encolarMensaje(mensaje);
                 return 0;
-        }
 
+        }
+        pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
 
 int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
+        pthread_mutex_lock(&clientesMutex);
         map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
 
         if (iter != Clientes->end()) {
+
                 Cliente* cli = iter->second;
                 string str_recv_msg = recv_msg;
 
@@ -218,10 +237,11 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
                         Mensaje* mensaje = crearMensaje(dest_cli->ip, dest_cli->puerto, false, contenido);
                         encolarMensaje(mensaje);
+                        pthread_mutex_unlock(&clientesMutex);
                         return 0;
                 }
         }
-
+        pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
 
@@ -315,7 +335,6 @@ void conexionesTotales(){
         cout << "TODO" << endl;
 }
 void tiempoEjecucion(){
-        //TODO
         double seconds_since_start;
         seconds_since_start = difftime( time(0), start);
         std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
@@ -427,14 +446,21 @@ void* receptorMensajes(void*) {
 /*
  *
  */
-int main(int argc, char** argv) {
 
-
+void init() {
         iniServer();
         test_init();
 
         pthread_mutex_init(&queueMutex, NULL);
         pthread_cond_init (&emitCond, NULL);
+        pthread_mutex_init(&clientesMutex, NULL);
+
+
+}
+
+int main(int argc, char** argv) {
+
+        init();
 
         pthread_t receptorHilo;
         pthread_create(&receptorHilo, NULL, receptorMensajes, NULL);
@@ -443,7 +469,6 @@ int main(int argc, char** argv) {
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
         consola();
-
 
         return 0;
 }

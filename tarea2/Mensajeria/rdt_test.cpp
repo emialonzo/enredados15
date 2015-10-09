@@ -138,11 +138,11 @@ void testPaso(char * msg, char * dest, int puerto) {
 }
 
 void test_rdt_send(int soc, appMsg* msg, char* dest, int puerto) {
-        sleep(10);
+        sleep(2);
         testPaso(msg-> mensaje, dest, puerto);
 }
 
 void test_rdt_send_broadcast(int soc, appMsg* msg, char* dest, int puerto) {
-        sleep(10);
+        sleep(2);
         testPaso(msg-> mensaje, dest, puerto);
 }
