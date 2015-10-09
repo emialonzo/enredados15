@@ -169,6 +169,7 @@ char* getConected(){
         else {
                 sprintf(retStr, "<No hay usuarios conectados>");
         }
+        cout << "___DEBUG" << retStr << endl;
         return retStr;
 }
 
@@ -189,8 +190,6 @@ int processGetConnectedMsg(char* ip, int puerto) {
 }
 
 int processLoginMsg(char* ip, int puerto, char * msg) {
-
-  cout << "epa epa andale arriba arriba!!! " << endl;
         pthread_mutex_lock(&clientesMutex);
         if (Clientes->find(ip) == Clientes->end()) {
                 Cliente * cli = new Cliente();
@@ -204,10 +203,10 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 Clientes->insert(make_pair(cli->ip, cli));
                 pthread_mutex_unlock(&clientesMutex);
                 cantConexiones++;
-                cout << "--cliente logueado" << endl;
+                cout << "Cliente logueado" << endl;
                 return 0;
         }
-        cout << "epa epa andale arriba arriba!!! " << endl;
+        cout << "ERROR: El cliente ip" << ip << ":" << puerto << endl;
         pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
