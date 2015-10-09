@@ -75,10 +75,10 @@ void * receptorMensajes(void*) {
   while (!meVoy) {
 
     //recibo y parseo mensaje, se bloquea hasta que recibe un mensaje
-    cout << " Espero por mensaje..." << endl;
+    cout << "--Espero por mensaje..." << endl;
     comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
-    printf("¡¡Mensaje (%d) recibido :: %s ::!!\n", i, comando);
-    printf("Origen del mensaje: %s:%d", ipEmisor, puertoEmisor);
+    printf("--Mensaje (%d) recibido :: %s ::!!\n", i, comando);
+    printf("--Origen del mensaje: %s:%d", ipEmisor, puertoEmisor);
     if (strcmp(comando, RELAYED_MESSAGE) == 0) {
       cout << "Mensaje multicast: " << comando << endl;
       //obtenego emisor
@@ -122,9 +122,8 @@ void mensajeria() {
 
   string comando;
   while (!meVoy) {
-
     //leo de pantalla estandar un comando
-    cout << ">";
+    cout << "++Ingrese comando >";
     getline(cin, comando);
     error = false;
     //parseo comando
@@ -132,31 +131,30 @@ void mensajeria() {
     if (comando.find(LOGOUT) == 0) {
       meVoy = true;
       sprintf(mensaje, "%s%s", LOGOUT, CR);
-      printf("Se ingreso el comando %s\n", mensaje);
       //tengo que liberar recursos?
     } else if (comando.find(GET_CONNECTED) == 0) {
       //pido lista de clientes conectados
       sprintf(mensaje, "%s%s", GET_CONNECTED, CR);
-      printf("Se ingreso el comando %s\n", mensaje);
     } else if (comando.find(MESSAGE) == 0) {
       //envia un mensaje a todos los clientes
       sscanf(comando.data(), "%*s %[^\n]", texto);
       sprintf(mensaje, "%s %s%s", MESSAGE, texto, CR);
-      printf("Se ingreso el comando %s\n", mensaje);
       //hay que setear el mensaje
     } else if (comando.find(PRIVATE_MESSAGE) == 0) {
       //envia un mensaje privado
       sscanf(comando.data(), "%*s %s %[^\n]", nick, texto);
       sprintf(mensaje, "%s <%s> %s%s", PRIVATE_MESSAGE, nick, texto, CR);
-      printf("Se ingreso el comando %s\n", mensaje);
       //hay que setear el mensaje
     } else {
+      sprintf(mensaje, "Error!");
       error = true;
     }
+    printf("++Se ingreso el comando %s\n", mensaje);
     // si no hubo error envio el mensaje al servidor
     if (!error) {
-      cout << "Enviando:::" << mensaje << ":::" << endl;
+      cout << "++Enviando:::" << mensaje << ":::" << endl;
       rdt_sendto(socketComandos, mensaje, IPservidor, puertoServidor);
+      cout << "++Mensaje Enviado " << endl;
     } else {
       cout << "comando no reconocido" << endl;
     }

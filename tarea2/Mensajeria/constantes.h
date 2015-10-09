@@ -12,7 +12,7 @@
 #define MAX_TEXTO 160
 #define MAX_NICK 20
 
-#define CR "\n"
+#define CR ""
 
 #define LOGIN "LOGIN"
 #define LOGOUT "LOGOUT"

@@ -190,6 +190,7 @@ int processGetConnectedMsg(char* ip, int puerto) {
 
 int processLoginMsg(char* ip, int puerto, char * msg) {
 
+  cout << "epa epa andale arriba arriba!!! " << endl;
         pthread_mutex_lock(&clientesMutex);
         if (Clientes->find(ip) == Clientes->end()) {
                 Cliente * cli = new Cliente();
@@ -203,8 +204,10 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 Clientes->insert(make_pair(cli->ip, cli));
                 pthread_mutex_unlock(&clientesMutex);
                 cantConexiones++;
+                cout << "--cliente logueado" << endl;
                 return 0;
         }
+        cout << "epa epa andale arriba arriba!!! " << endl;
         pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
@@ -212,6 +215,7 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
 int processLogut(char* ip, int puerto) {
         pthread_mutex_lock(&clientesMutex);
         Clientes->erase(ip);
+        cantConexiones--;
         pthread_mutex_unlock(&clientesMutex);
         //TODO Ver si se manda un goodbye o no cuando se hace un logout
         //char contenido[MAX_TEXTO] = GOODBYE;
@@ -280,28 +284,28 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
 
 
-void parseMessage(Cliente* c, char* mensaje){
-        string comando = mensaje;
-
-        // if (comando.find(LOGIN) == 0) {
-        //         //obtengo nombre de usuario
-        //         strcpy(c->nick,mensaje);
-        //         loginCliente(c);
-        // } else
-        if (comando.find(LOGOUT) == 0) {
-                //desloegueo al usuario
-                logOut(c);
-        } else if (comando.find(GET_CONNECTED) == 0) {
-                //envio conectados
-                //char* conectados = getConected();
-        } else if (comando.find(MESSAGE) == 0) {
-                //envio mensaje multicast
-        } else if (comando.find(PRIVATE_MESSAGE) == 0) {
-                //envio mensaje privado
-        } else {
-                std::cout << "Ha llegado un mensaje invallido hacia el servidor." << std::endl;
-        }
-}
+// void parseMessage(Cliente* c, char* mensaje){
+//         string comando = mensaje;
+//
+//         if (comando.find(LOGIN) == 0) {
+//                 //obtengo nombre de usuario
+//                 strcpy(c->nick,mensaje);
+//                 loginCliente(c);
+//         } else
+//         if (comando.find(LOGOUT) == 0) {
+//                 //desloegueo al usuario
+//                 logOut(c);
+//         } else if (comando.find(GET_CONNECTED) == 0) {
+//                 //envio conectados
+//                 //char* conectados = getConected();
+//         } else if (comando.find(MESSAGE) == 0) {
+//                 //envio mensaje multicast
+//         } else if (comando.find(PRIVATE_MESSAGE) == 0) {
+//                 //envio mensaje privado
+//         } else {
+//                 std::cout << "Ha llegado un mensaje invallido hacia el servidor." << std::endl;
+//         }
+// }
 
 MsgComand getCommandFromMsg(char* msg) {
         string comando = msg;
@@ -324,27 +328,27 @@ MsgComand getCommandFromMsg(char* msg) {
 
 
 
-void* debug(){
-        cout << "::DEBUG:: escribe ip de cliente" << endl;
-        string ip;
-        getline(cin, ip);
-        cout << "::DEBUG:: escribe un mensaje que llega desde cliente" << endl;
-        cout << ">";
-        string comando;
-        getline(cin, comando);
-
-        char * cstrComando = new char [comando.length()+1];
-        strcpy (cstrComando, comando.c_str());
-
-        char * cstrIp = new char [comando.length()+1];
-        strcpy (cstrIp, comando.c_str());
-
-        Cliente* c = getCliente(cstrIp);
-
-
-        parseMessage(c, cstrComando);
-        return NULL;
-};
+// void* debug(){
+//         cout << "::DEBUG:: escribe ip de cliente" << endl;
+//         string ip;
+//         getline(cin, ip);
+//         cout << "::DEBUG:: escribe un mensaje que llega desde cliente" << endl;
+//         cout << ">";
+//         string comando;
+//         getline(cin, comando);
+//
+//         char * cstrComando = new char [comando.length()+1];
+//         strcpy (cstrComando, comando.c_str());
+//
+//         char * cstrIp = new char [comando.length()+1];
+//         strcpy (cstrIp, comando.c_str());
+//
+//         Cliente* c = getCliente(cstrIp);
+//
+//
+//         parseMessage(c, cstrComando);
+//         return NULL;
+// };
 
 void* debugRdt(){
         cout << ">";
@@ -469,27 +473,34 @@ void* receptorMensajes(void*) {
                 cout << "  **Comando recibido:" << msg << "**" << endl;
 
                 MsgComand command = getCommandFromMsg(msg);
-
+                char strComandoAux[40];
                 switch (command) {
                         case COM_LOGIN:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_LOGIN",COM_LOGIN, msg);
                                 processLoginMsg(ipEmisor, puertoEmisor, msg);
                                 break;
                         case COM_GET_CONNECTED:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_GET_CONNECTED", COM_GET_CONNECTED, msg);
                                 processGetConnectedMsg(ipEmisor, puertoEmisor);
                                 break;
                         case COM_MSG:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_MSG", COM_MSG, msg);
                                 processMulticastMessage(ipEmisor, msg);
                                 break;
                         case COM_PVT_MSG:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "login", COM_PVT_MSG, msg);
                                 processPrivatetMessage(ipEmisor, msg);
                                 break;
                         case COM_LOGOUT:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_LOGOUT", COM_LOGOUT, msg);
                                 processLogut(ipEmisor, puertoEmisor);
                                 break;
                         case COM_INVALID:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_INVALID", COM_INVALID, msg);
                                 //TODO ver que se hace con un caracter valido
                                 break;
                 }
+                cout << strComandoAux << endl ;
         }
         return NULL;
 }
@@ -554,12 +565,12 @@ int main(int argc, char** argv) {
   strcpy(ipMulticast, IP_MULTICAST);
 
 
-  //FIXME
-  char* ipClientePrueba = new char[MAX_IP_LENGTH];
-  char* msjPrueba = new char[MAX_IP_LENGTH];
-  strcpy(ipClientePrueba,"172.16.105.50");
-  strcpy(msjPrueba,"LOGIN Debug");
-  processLoginMsg(ipClientePrueba,8888, msjPrueba);
+  // //FIXME
+  // char* ipClientePrueba = new char[MAX_IP_LENGTH];
+  // char* msjPrueba = new char[MAX_IP_LENGTH];
+  // strcpy(ipClientePrueba,"172.16.105.50");
+  // strcpy(msjPrueba,"LOGIN Debug");
+  // processLoginMsg(ipClientePrueba,8888, msjPrueba);
   //DEBUG
 
         //FIXME aca no tengo claro que pasarle.
@@ -579,7 +590,7 @@ int main(int argc, char** argv) {
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
         pthread_t monitorHilo;
-        pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
+        // pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
 
         consola();
 

@@ -16,7 +16,7 @@
 
 using namespace std;
 
-#define DEBUG true
+#define DEBUG false
 
 //global vars
 string usuario(USUARIO);
@@ -182,7 +182,7 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
       strcpy(ipEmisor, ipFrom);
       puertoEmisor = ntohs(addr.sin_port);
       //todo ok :)
-      printf("rdt_recibe Mensaje recibido: %s\n", mensaje->mensaje);
+      if(DEBUG) printf("rdt_recibe Mensaje recibido: %s\n", mensaje->mensaje);
       char* retMen = new char[MSGBUFSIZE];
       strcpy(retMen, mensaje->mensaje);
 
