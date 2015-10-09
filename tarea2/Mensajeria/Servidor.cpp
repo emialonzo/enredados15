@@ -12,20 +12,24 @@
 #include <string>
 #include <string.h>
 #include <time.h>
-time_t start = time(0);
+#include <unistd.h> //sleep
+
 using namespace std;
 
 #include "rdtPrueba.h"
-// #include "rdt.h"
+//#include "rdt.h"
 #include "constantes.h"
 
 //FIXME esto es para probar tiene que volar
-#include "rdt_test.h"
+//#include "rdt_test.h"
 
 #define RELAYED_MESSAGE "RELAYED_MESSAGE"
 #define PRIVATE_MESSAGE "PRIVATE_MESSAGE"
 #define CONNECTED "CONNECTED"
 #define GOODBYE "GOODBYE"
+
+#define TTL_CLIENTES 15
+#define MONITOR_TIME 30
 
 int socketMulticast;
 
@@ -33,12 +37,10 @@ typedef struct Cliente {
         char nick[50];
         int puerto;
         char ip[20];
-        int cantMensajes;
+        int cantMensajes;//Es neecesario?
+        time_t ult_actividad;
 } Cliente;
-typedef struct Servidor {
-        int cantMensajes;
-        int cantClientes;
-} Servidor;
+
 typedef struct Mensaje {
         char  destino[MAX_IP_LENGTH];
         int   dest_puerto;
@@ -53,7 +55,9 @@ typedef map<string, Cliente*> MapClientes;
 typedef enum  {COM_LOGIN, COM_LOGOUT, COM_GET_CONNECTED, COM_MSG, COM_PVT_MSG, COM_INVALID} MsgComand;
 
 MapClientes* Clientes = new MapClientes;
-Servidor* servidor = new Servidor;
+
+
+time_t start = time(0);
 
 typedef queue<Mensaje*> ColaMensajes;
 
@@ -68,8 +72,14 @@ int puertoMulticast = PUERTO_MULTICAST;
 pthread_mutex_t queueMutex;
 pthread_cond_t emitCond;
 
+pthread_mutex_t clientesMutex;
+
 int socEmisor = 0;
 int socReceptor = 0;
+
+int cantMensajes = 0;
+int cantConexiones = 0;
+
 
 void loginCliente(Cliente* c) {
         Clientes->insert(make_pair(c->ip, c));
@@ -101,13 +111,12 @@ TablaClienteId* getClientesIdForMulticast(){
   return tabla;
 }
 
+//Se tiene que llamar con el mutex de clientes ya pedido
 Cliente* getClienteByNick(const char* nick) {
         Cliente * ret = NULL;
         map<string, Cliente*>::iterator iter = Clientes->begin();
-
         while (iter != Clientes->end()) {
                 ret = iter->second;
-
                 if (strcmp(ret->nick, nick) == 0) {
                         return ret;
                 }
@@ -125,6 +134,8 @@ Mensaje* crearMensaje(char* ipDestino,int puerto, bool multicast, char* contenid
         strcpy(ret->origen,IP_SERVIDOR);
         strcpy(ret->msg, contenido);
         strcpy(ret->destino, ipDestino);
+
+        ret->dest_puerto = puerto;
         ret->multicast = multicast;
 
         return ret;
@@ -137,35 +148,49 @@ void encolarMensaje(Mensaje* mensaje) {
         pthread_mutex_unlock(&queueMutex);
 }
 
+//Hay que llamar a esta con el mutex de clientes bloqueado.
 char* getConected(){
         char* retStr = new char[MAX_LARGO_MENSAJE];
         MapClientes::iterator it = Clientes->begin();
-        //TODO si el diccionario esta vacio revienta
-        if(Clientes->size()==1){
-          strcat(retStr, it->second->nick);
-        }
-        else{
-          strcat(retStr, it->second->nick);
-          ++it;
-          while(it != Clientes->end()) {
-                  strcat(retStr, "|");
+        if (it != Clientes->end()) {
+                if(Clientes->size()==1){
+                  strcat(retStr, it->second->nick);
+                }
+                else{
                   strcat(retStr, it->second->nick);
                   ++it;
-          }
+                  while(it != Clientes->end()) {
+                          strcat(retStr, "|");
+                          strcat(retStr, it->second->nick);
+                          ++it;
+                  }
+                }
         }
-
+        else {
+                sprintf(retStr, "<No hay usuarios conectados>");
+        }
         return retStr;
 }
 
 int processGetConnectedMsg(char* ip, int puerto) {
         char contenido[MAX_TEXTO];
-        sprintf(contenido, "%s %s", CONNECTED, getConected());
-        Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
-        encolarMensaje(mensaje);
-        return 0;
+        pthread_mutex_lock(&clientesMutex);
+        if (Clientes->find(ip) != Clientes->end()) {
+                Cliente * cli = Clientes->at(ip);
+                cli->ult_actividad = time(0);
+                sprintf(contenido, "%s %s", CONNECTED, getConected());
+                pthread_mutex_unlock(&clientesMutex);
+                Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
+                encolarMensaje(mensaje);
+                return 0;
+        }
+        pthread_mutex_unlock(&clientesMutex);
+        return -1;
 }
 
 int processLoginMsg(char* ip, int puerto, char * msg) {
+
+        pthread_mutex_lock(&clientesMutex);
         if (Clientes->find(ip) == Clientes->end()) {
                 Cliente * cli = new Cliente();
                 string nick = msg;
@@ -174,27 +199,35 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 strcpy(cli->ip, ip);
                 cli->cantMensajes = 0;
                 cli->puerto = puerto;
-
+                cli->ult_actividad = time(0);
                 Clientes->insert(make_pair(cli->ip, cli));
+                pthread_mutex_unlock(&clientesMutex);
+                cantConexiones++;
                 return 0;
         }
+        pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
 
 int processLogut(char* ip, int puerto) {
+        pthread_mutex_lock(&clientesMutex);
         Clientes->erase(ip);
-        char contenido[MAX_TEXTO] = GOODBYE;
-        Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
-        encolarMensaje(mensaje);
+        pthread_mutex_unlock(&clientesMutex);
+        //TODO Ver si se manda un goodbye o no cuando se hace un logout
+        //char contenido[MAX_TEXTO] = GOODBYE;
+        //Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
+        //encolarMensaje(mensaje);
         return 0;
 }
 
 int processMulticastMessage(char* sourceIp, char* recv_msg) {
-
+        pthread_mutex_lock(&clientesMutex);
         map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
 
         if (iter != Clientes->end()) {
                 Cliente* cli = iter->second;
+                pthread_mutex_unlock(&clientesMutex);
+                cli->ult_actividad = time(0);
                 string str_contenido = recv_msg;
                 str_contenido = str_contenido.substr(str_contenido.find(" ") +1);
 
@@ -204,17 +237,20 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
                 Mensaje* mensaje = crearMensaje(ipMulticast, puertoMulticast, true, contenido);
                 encolarMensaje(mensaje);
                 return 0;
-        }
 
+        }
+        pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
 
 int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
+        pthread_mutex_lock(&clientesMutex);
         map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
 
         if (iter != Clientes->end()) {
                 Cliente* cli = iter->second;
+                cli->ult_actividad = time(0);
                 string str_recv_msg = recv_msg;
 
                 //Descarto el cabezal private msg
@@ -224,6 +260,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
                 const char* dest_nick = str_recv_msg.substr(0, str_recv_msg.find(" ")).c_str();
 
                 Cliente* dest_cli = getClienteByNick(dest_nick);
+                pthread_mutex_unlock(&clientesMutex);
                 if (dest_cli != NULL) {
                         //Descarto el nick y me quedo con el mensaje
                         str_recv_msg = str_recv_msg.substr(str_recv_msg.find(" ") +1);
@@ -233,10 +270,11 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
                         Mensaje* mensaje = crearMensaje(dest_cli->ip, dest_cli->puerto, false, contenido);
                         encolarMensaje(mensaje);
+
                         return 0;
                 }
         }
-
+        pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
 
@@ -325,19 +363,20 @@ void* debugRdt(){
 };
 
 void clientesConectados(){
-        //TODO
-        cout << getConected() << endl;
+        pthread_mutex_lock(&clientesMutex);
+        char * conectados =  getConected();
+        pthread_mutex_unlock(&clientesMutex);
+        cout << conectados << endl;
 }
 void mensajesEnviados(){
-        //TODO
-        cout << "TODO" << endl;
+        cout << "Mensajes enviados: " << cantMensajes << endl;
 }
 void conexionesTotales(){
-        //TODO
-        cout << "TODO" << endl;
+
+        cout << "Cantidad de conexiones totales: "<< cantConexiones << endl;
 }
 void tiempoEjecucion(){
-        //TODO
+
         double seconds_since_start;
         seconds_since_start = difftime( time(0), start);
         std::cout << "Han pasado "  << seconds_since_start << " segundos" << std::endl;
@@ -379,7 +418,7 @@ int consola() {
 
 void* emisorMensajes(void*) {
         //FIXME aca no tengo claro que pasarle.
-        socEmisor = crearSocket(puertoMulticast, false);
+        socEmisor = CrearSocket(puertoMulticast, false);
         while (true) {
                 //mutex_lock
                 pthread_mutex_lock(&queueMutex);
@@ -395,18 +434,22 @@ void* emisorMensajes(void*) {
                 //mutex_unlock
                 pthread_mutex_unlock(&queueMutex);
 
-                appMsg* rdt_msg = new appMsg();
+                /*appMsg* rdt_msg = new appMsg();
                 strcpy(rdt_msg->mensaje, msg->msg);
-                strcpy(rdt_msg->source_ip, msg->origen);
-
+                strcpy(rdt_msg->source_ip, msg->origen);*/
+                pthread_mutex_lock(&clientesMutex);
                 if (msg->multicast) {
                         //FIXME esto es de test aca se hce multicast
-                        test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+                        //test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+                        rdt_send_multicast(socEmisor, msg->msg, getClientesIdForMulticast());
                 }
                 else {
                         //FIXME esto es de test aca se hace unicast
-                        test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+                        //test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+                        rdt_sendto(socEmisor, msg->msg, msg->destino, msg->dest_puerto);
                 }
+                pthread_mutex_unlock(&clientesMutex);
+                cantMensajes++;
 
         }
         return NULL;
@@ -414,28 +457,31 @@ void* emisorMensajes(void*) {
 
 
 void* receptorMensajes(void*) {
-        socReceptor = crearSocket(puertoServidor, false);
+        socReceptor = CrearSocket(puertoServidor, false);
         while (true) {
                 //FIXME esto es un test, aca va rdt_rvc
-                appMsg* msg = test_rdt_rcv(socReceptor);
+                //appMsg* msg = test_rdt_rcv(socReceptor);
+                char* ipEmisor;
+                int puertoEmisor;
+                char* msg = rdt_recibe(socReceptor, ipEmisor, puertoEmisor);
 
-                MsgComand command = getCommandFromMsg(msg->mensaje);
+                MsgComand command = getCommandFromMsg(msg);
 
                 switch (command) {
                         case COM_LOGIN:
-                                processLoginMsg(msg->source_ip, msg->source_port, msg->mensaje);
+                                processLoginMsg(ipEmisor, puertoEmisor, msg);
                                 break;
                         case COM_GET_CONNECTED:
-                                processGetConnectedMsg(msg->source_ip, msg->source_port);
+                                processGetConnectedMsg(ipEmisor, puertoEmisor);
                                 break;
                         case COM_MSG:
-                                processMulticastMessage(msg->source_ip, msg->mensaje);
+                                processMulticastMessage(ipEmisor, msg);
                                 break;
                         case COM_PVT_MSG:
-                                processPrivatetMessage(msg->source_ip, msg->mensaje);
+                                processPrivatetMessage(ipEmisor, msg);
                                 break;
                         case COM_LOGOUT:
-                                processLogut(msg->source_ip, msg->source_port);
+                                processLogut(ipEmisor, puertoEmisor);
                                 break;
                         case COM_INVALID:
                                 //TODO ver que se hace con un caracter valido
@@ -449,18 +495,52 @@ void* receptorMensajes(void*) {
 /*
  *
  */
-int main(int argc, char** argv) {
-        char* ipClientePrueba = new char[MAX_IP_LENGTH];
-        char* msjPrueba = new char[MAX_IP_LENGTH];
-        strcpy(ipClientePrueba,"127.0.0.1");
-        strcpy(msjPrueba,"LOGIN Debug");
 
-        processLoginMsg(ipClientePrueba,8888, msjPrueba);
-        //iniServer();
-        test_init();
+ void* monitorClientes(void* ) {
 
+         while (true) {
+                 sleep(MONITOR_TIME);
+                 pthread_mutex_lock(&clientesMutex);
+                 map<string, Cliente*>::iterator iter = Clientes->begin();
+                 queue<string> aBorrar;
+                 while (iter != Clientes->end()) {
+                         Cliente* c = iter -> second;
+                         time_t now = time(0);
+                         double dif = difftime(now, c->ult_actividad);
+
+                         if (dif > TTL_CLIENTES) {
+                                 aBorrar.push(iter->first);
+                         }
+                         iter++;
+                 }
+
+                 while (!aBorrar.empty()) {
+                         string ip = aBorrar.front();
+                         aBorrar.pop();
+                         Cliente* c  = Clientes->at(ip);
+                         Clientes->erase(ip);
+                         Mensaje * mensaje = crearMensaje(c->ip, c->puerto, false, GOODBYE);
+                         encolarMensaje(mensaje);
+                 }
+                 pthread_mutex_unlock(&clientesMutex);
+
+         }
+         return NULL;
+ }
+
+
+void init() {
+
+        //test_init();
         pthread_mutex_init(&queueMutex, NULL);
         pthread_cond_init (&emitCond, NULL);
+        pthread_mutex_init(&clientesMutex, NULL);
+
+}
+
+int main(int argc, char** argv) {
+
+        init();
 
         pthread_t receptorHilo;
         pthread_create(&receptorHilo, NULL, receptorMensajes, NULL);
@@ -468,28 +548,10 @@ int main(int argc, char** argv) {
         pthread_t emisorHilo;
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
+        pthread_t monitorHilo;
+        pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
+
         consola();
-        /*for (int i = 0; i < 20; i++) {
-
-                char* ip = new char[20];
-                sprintf(ip, "192.168.1.%d", i);
-
-                Cliente* c = new Cliente;
-                sprintf(c->nick, "nick_%d", i);
-
-                clientes->insert(pair<char*, Cliente*>(ip, c));
-        }
-
-        cout << "prueba" << endl;
-        char* bufferPrueba = new char[50];
-
-        for (MapClientes::iterator it = clientes->begin(); it != clientes->end(); ++it) {
-                sprintf(bufferPrueba, "prueba <%s>", it->first);
-                rdt_send(bufferPrueba);
-                std::cout << it->first << " => " << it->second->nick << '\n';
-        }
-
-        cout << getConected() << endl;*/
 
         return 0;
 }
