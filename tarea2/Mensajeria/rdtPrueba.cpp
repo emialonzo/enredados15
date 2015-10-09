@@ -128,11 +128,11 @@ void updateSequenceNumber(TablaSecuencias* tabla, char* ip, int num){
 }
 
 char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
+  if(DEBUG) cout << "rdt_recibe inicio " << endl;
+
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
-
   socklen_t addrlen;
-
   int nbytes;
   rdtMsj* mensaje = new rdtMsj;
 
@@ -141,19 +141,19 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
     addrlen  = sizeof(addr);
 
     //recibimos UDP
-    if(DEBUG) cout << "__DEBUG rdt_recive RECIBIR" << endl;
+    if(DEBUG) cout << "rdt_recibe recibiendo..." << endl;
     if ((nbytes = recvfrom(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
-      if(DEBUG) cout << "__DEBUG ERROR" << endl;
+      // if(DEBUG) cout << "__DEBUG ERROR" << endl;
       perror("recvfrom");
       exit(1);
     }
-    cout << "__DEBUG rdt_recive nbytes" << nbytes << " sizeof(*mensaje)" << sizeof(*mensaje) << endl;
+    // cout << "rdt_recibe  nbytes" << nbytes << " sizeof(*mensaje)" << sizeof(*mensaje) << endl;
     char* ipFrom = inet_ntoa(addr.sin_addr);
     int puerto=ntohs(addr.sin_port);
     int seqEsperado = getSequenceNumber(receptor, ipFrom);
-    std::cout << "__DEBUG rdt_recive ipFrom:" << ipFrom << " puerto:" << puerto << std::endl;
-    cout << "__DEBUG rdt_recive recibi=>";
-    printMensaje(mensaje);
+    if(DEBUG) std::cout << "rdt_recibe Se recibe desde ipFrom:" << ipFrom << ":" << puerto << std::endl;
+    if(DEBUG) cout << "rdt_recibe Se recibe => " << endl;
+    if(DEBUG) printMensaje(mensaje);
 
     rdtMsj* respuesta = new rdtMsj;
     respuesta->esAck=true;
@@ -167,9 +167,10 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
       respuesta->seq=seqEsperado;
     }
 
-    cout << "__DEBUG rdt_recibe envio=>" ;
+    if(DEBUG)  cout << "rdt_recibe Se envia =>" << endl;
     printMensaje(respuesta);
     addrlen  = sizeof(addr);
+    if(DEBUG)  cout << "rdt_recibe Enviando..." << endl ;
     int result = sendto(soc, respuesta, sizeof(*respuesta), 0, (struct sockaddr *)&addr, addrlen);
 
     if( (result>0) && (seqEsperado == mensaje->seq)){ //(&& result > 0 )
@@ -181,7 +182,7 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
       strcpy(ipEmisor, ipFrom);
       puertoEmisor = ntohs(addr.sin_port);
       //todo ok :)
-      printf("DEBUG::Mensaje recibido: %s\n", mensaje->mensaje);
+      printf("rdt_recibe Mensaje recibido: %s\n", mensaje->mensaje);
       char* retMen = new char[MSGBUFSIZE];
       strcpy(retMen, mensaje->mensaje);
 
