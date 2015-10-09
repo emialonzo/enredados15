@@ -228,22 +228,32 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
   addr_multicast.sin_port = htons(puerto_multicast);
   addr_multicast.sin_addr.s_addr = inet_addr(ip_multicast.c_str());
 
+  cout << "__DEBUG:rdtSendMulticast:inicializando estructuras" << endl;
   //armo mensaje a enviar
   rdtMsj* mensaje = new rdtMsj;
   rdtMsj* mensajeRcb = new rdtMsj;
-  memset(&mensaje , 0, sizeof(mensaje));
+  memset(mensaje , 0, sizeof(&mensaje));
   mensaje->esAck=false;
   strcpy(mensaje->from, "esNecesario?");
   strcpy(mensaje->mensaje, mensajeToSend);
   mensaje->esMulticast=true;
   mensaje->seq = multicastSeq;
+
+  char* prueba = new char[MAX_LARGO_MENSAJE];
+  memset(prueba, 0, sizeof(char)*MAX_LARGO_MENSAJE );
+  strcpy(prueba, "MESSAGE Debug multicast");
+
+
   while(true){
     //envio mensaje a multicast
-    int result = sendto(socket_servidor, mensaje, sizeof(mensaje), 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
+    cout << "__DEBUG-:RDT send, Mensaje:" << mensaje->mensaje << endl;
+    //int result = sendto(socket_servidor, (char*)mensaje, sizeof(mensaje) , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
+    int result = sendto(socket_servidor, (char*)prueba, sizeof(char)*MAX_LARGO_MENSAJE , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
 
     int cantClientes=tablaClientes->size();
     int ackRecibidosOk=0;
     if(result >0){ //si se envio el mensaje
+
       while(cantClientes>ackRecibidosOk){
         memset(mensajeRcb , 0, sizeof(&mensajeRcb));
         //envio ACK ok
@@ -268,6 +278,10 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
         //Todos los clientes confiramaron la recepcion del mensaje
         multicastSeq = (multicastSeq+1) % 2;
       }
+    }
+    else{//FIXME
+      cout << "send fail" << endl;
+      sleep(3);
     }
   }
   delete(mensaje);

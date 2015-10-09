@@ -318,6 +318,7 @@ void* debugRdt(){
         strcpy(mensajeToSend, "MESSAGE Debug multicast");
         TablaClienteId* tablaClientes = getClientesIdForMulticast();
 
+        cout << "DEBUG:::enviado" << endl;
         rdt_send_multicast(socketMulticast, mensajeToSend , tablaClientes);
         //sendMulticast(mensaje);
         return NULL;
@@ -325,7 +326,7 @@ void* debugRdt(){
 
 void clientesConectados(){
         //TODO
-        cout << "TODO" << endl;
+        cout << getConected() << endl;
 }
 void mensajesEnviados(){
         //TODO
@@ -449,8 +450,12 @@ void* receptorMensajes(void*) {
  *
  */
 int main(int argc, char** argv) {
+        char* ipClientePrueba = new char[MAX_IP_LENGTH];
+        char* msjPrueba = new char[MAX_IP_LENGTH];
+        strcpy(ipClientePrueba,"127.0.0.1");
+        strcpy(msjPrueba,"LOGIN Debug");
 
-
+        processLoginMsg(ipClientePrueba,8888, msjPrueba);
         //iniServer();
         test_init();
 
