@@ -52,57 +52,55 @@ using namespace std;
 char* apodo;
 char* IPservidor;
 int puertoServidor;
+int socketMensajes;
+int socketComandos;
 
 bool meVoy;
 
 void * receptorMensajes(void*) {
-  printf("Principio del hilo de recepcion de mensajes.\n");
+  // printf("Principio del hilo de recepcion de mensajes.\n");
   int i = 0;
-  //char* comando; //= new char[50];
+  // char* comando; //= new char[50];
   // char comando[MAX_LARGO_MENSAJE]; //= new char[50];
   // memset(comando,0,MAX_LARGO_MENSAJE);
   char* comando;
 
   //iniRdt();
-  printf("voy a entrar al loop del receptor, puerto cliente:%d\n", PUERTO_CLIENTE);
+  //printf("voy a entrar al loop del receptor, puerto cliente:%d\n", PUERTO_CLIENTE);
 
-  int socketCliente = CrearSocket(PUERTO_CLIENTE, true);
+  //int socketCliente = CrearSocket(PUERTO_CLIENTE, true);
   char* ipEmisor;
   int puertoEmisor;
 
   while (!meVoy) {
 
-    //recibo mensaje, se bloquea hasta que recibe un mensaje
-    //parseo mensaje
-
-    //comando = rdt_receive();
-    //comando = recibir();
+    //recibo y parseo mensaje, se bloquea hasta que recibe un mensaje
     cout << "Espero por mensaje" << endl;
-    comando = rdt_recibe(socketCliente,  ipEmisor, puertoEmisor);
-    // strcat(comando,"cpomadno");
+    comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
     printf("Mensaje (%d) recibido :: %s ::\n", i, comando);
+    printf("Origen del mensaje: %s:%d", ipEmisor, puertoEmisor);
     if (strcmp(comando, RELAYED_MESSAGE) == 0) {
+      cout << "Mensaje multicast: " << comando << endl;
       //obtenego emisor
       //obtengo mensaje
       //modifico estructoruas
     } else if (strcmp(comando, PRIVATE_MESSAGE) == 0) {
+      cout << "Mensaje privado: " << comando << endl;
       //obtenego emisor
       //obtengo mensaje
       //modifico estructoruas
     } else if (strcmp(comando, CONNECTED) == 0) {
+      cout << "Conectados: " << comando << endl;
       //obtiene los clientes conectados separados por pipe
       //parsea lista de clientes conectados
       //altera estructura
     } else if (strcmp(comando, GOODBYE) == 0) {
+      cout << "Me desconectaron: " << comando << endl;
+      meVoy = true;
       //servidor se fue
       //cierro cliente de forma segura
     }
-
-    //cerr << ":::DEBUGS_HILOS:::" << comando << endl;
-    // unsigned int seconds = 4;
-    // sleep(seconds);
     i++;
-
   }
 
   return NULL;
@@ -158,8 +156,7 @@ void mensajeria() {
     // si no hubo error envio el mensaje al servidor
     if (!error) {
       cout << "Enviando:::" << mensaje << ":::" << endl;
-      //rdt_send(...parametros...);
-      //sendToServer(mensaje);
+      rdt_sendto(socketComandos, mensaje, IPservidor, puertoServidor);
     } else {
       cout << "comando no reconocido" << endl;
     }
@@ -172,11 +169,9 @@ void mensajeria() {
 int main(int argc, char** argv) {
 
   // cargo los parametros (apodo, IP y puerto del servidor)
-  mensajeria();
   int puertoComandos(PUERTO_COMANDO);
   int puertoMensajes(PUERTO_MENSAJES);
 
-  meVoy = false;
   if (argc < 4) {
     printf("Uso: ./cliente <apodo> <IP servidor> <puerto servidor>\n");
     exit(0);
@@ -186,8 +181,8 @@ int main(int argc, char** argv) {
   puertoServidor = atoi(argv[3]);
 
   // creo los sockets que va a usar
-  int socketMensajes = CrearSocket(puertoMensajes, true);
-  int socketComandos = CrearSocket(puertoComandos, false);
+  socketMensajes = CrearSocket(puertoMensajes, true);
+  socketComandos = CrearSocket(puertoComandos, false);
 
   if (socketMensajes < 0 || socketComandos < 0) {
     printf("No se pudo iniciar el cliente");
@@ -195,28 +190,22 @@ int main(int argc, char** argv) {
   }
 
   // Me logueo, armo el mensaje para el servidor con mis datos (IP y puerto).
-  // rdt_send(LOGIN)
+  char login[MAX_LARGO_MENSAJE];
+  memset(&login, 0, MAX_LARGO_MENSAJE);
+  strcat(login, "LOGIN ");
+  strcat(login, apodo);
+  strcat(login, CR);
 
-  // char login[MAX_LARGO_MENSAJE];
-  // memset(&login, 0, MAX_LARGO_MENSAJE);
-  // strcat(login, "LOGIN ");
-  // strcat(login, apodo);
-  // strcat(login, CR);
-  //
-  // printf("Mensaje de logueo: %s\n", login);
-  //
-  // int result = rdt_sendTo(socketComandos, login, IPservidor, puertoServidor);
-  // if (result < 0) {
-  //   printf("No se pudo iniciar sesion\n");
-  //   exit(0);
-  // }
-  //
-  // printf("Su nombre de usuario es: %s y su servidor es %s:%d\n", apodo, IPservidor,puertoServidor);
-  //
-  // // Empiezo a enviar y recibir mensajes (hasta LOGOUT)
-  // //mensajeria();
-  // rdt_cerrarSocket(socketComandos);
-  // rdt_cerrarSocket(socketMensajes);
+  printf("Mensaje de logueo: %s\n", login);
+
+  rdt_sendto(socketComandos, login, IPservidor, puertoServidor);
+
+  printf("Su nombre de usuario es: %s y su servidor es %s:%d\n", apodo, IPservidor,puertoServidor);
+  meVoy = false;
+  // Empiezo a enviar y recibir mensajes (hasta LOGOUT)
+  mensajeria();
+  //rdt_cerrarSocket(socketComandos);
+  //rdt_cerrarSocket(socketMensajes);
 
   return 0;
 }
