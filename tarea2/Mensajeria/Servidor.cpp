@@ -31,7 +31,7 @@ using namespace std;
 #define TTL_CLIENTES 15
 #define MONITOR_TIME 30
 
-int socketMulticast;
+
 
 typedef struct Cliente {
         char nick[50];
@@ -357,7 +357,7 @@ void* debugRdt(){
         TablaClienteId* tablaClientes = getClientesIdForMulticast();
 
         cout << "DEBUG:::enviado" << endl;
-        rdt_send_multicast(socketMulticast, mensajeToSend , tablaClientes);
+        rdt_send_multicast(socEmisor, mensajeToSend , tablaClientes);
         //sendMulticast(mensaje);
         return NULL;
 };
@@ -539,13 +539,25 @@ void init() {
 
 int main(int argc, char** argv) {
 
+
         init();
 
+  //FIXME
+  char* ipClientePrueba = new char[MAX_IP_LENGTH];
+  char* msjPrueba = new char[MAX_IP_LENGTH];
+  strcpy(ipClientePrueba,"127.0.0.1");
+  strcpy(msjPrueba,"LOGIN Debug");
+  processLoginMsg(ipClientePrueba,8888, msjPrueba);
+  //DEBUG
+  
         //FIXME aca no tengo claro que pasarle.
-        std::cout << "socEmisor" << std::endl;
+        std::cout << "socEmisor:" ;
         socEmisor = CrearSocket(9999, false);
-        std::cout << "socReceptor" << std::endl;
+        cout << socEmisor << std::endl;
+
+        std::cout << "socReceptor" ;
         socReceptor = CrearSocket(puertoServidor, false);
+        cout << socReceptor << std::endl;
 
 
         pthread_t receptorHilo;
