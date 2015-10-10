@@ -66,7 +66,7 @@ ColaMensajes* colaMensajes = new ColaMensajes;
 char* ipServidor ;//= IP_SERVIDOR;
 int  puertoServidor = PUERTO_SERVIDOR;
 
-char* ipMulticast ;//= IP_MULTICAST;
+char* ipMulticast(IP_MULTICAST);//= IP_MULTICAST;
 int puertoMulticast = PUERTO_MULTICAST;
 
 pthread_mutex_t queueMutex;
@@ -169,7 +169,7 @@ char* getConected(){
         else {
                 sprintf(retStr, "<No hay usuarios conectados>");
         }
-        cout << "___DEBUG" << retStr << endl;
+
         return retStr;
 }
 
@@ -556,14 +556,13 @@ void init() {
 }
 
 int main(int argc, char** argv) {
-
-
   init();
 
   char* ipServidor = new char[MAX_IP_LENGTH];
   strcpy(ipServidor, IP_SERVIDOR);
-  char* ipMulticast = new char[MAX_IP_LENGTH];
-  strcpy(ipMulticast, IP_MULTICAST);
+
+  //char* ipMulticast = new char[MAX_IP_LENGTH];
+  //strcpy(ipMulticast, IP_MULTICAST);
 
 
   // //FIXME
