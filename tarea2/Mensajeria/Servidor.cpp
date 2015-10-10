@@ -50,6 +50,12 @@ typedef struct Mensaje {
         bool  multicast;
 
 } Mensaje;
+
+
+
+void printMensaje(Mensaje* msg){
+  cout << "msg->destino:" << msg->destino << " msg->dest_puerto:" << msg->dest_puerto << " msg->origen:" << msg->origen << " msg->orig_puerto:" << msg->orig_puerto << " msg->msg:" << msg->msg << " msg->multicast:" << msg->multicast << endl;
+}
 typedef map<string, Cliente*> MapClientes;
 
 typedef enum  {COM_LOGIN, COM_LOGOUT, COM_GET_CONNECTED, COM_MSG, COM_PVT_MSG, COM_INVALID} MsgComand;
@@ -128,14 +134,14 @@ Cliente* getClienteByNick(const char* nick) {
 
 
 
-Mensaje* crearMensaje(char* ipDestino,int puerto, bool multicast, char* contenido) {
+Mensaje* crearMensaje(char* ipDestino, bool multicast, char* contenido) {
 
         Mensaje* ret = new Mensaje();
         strcpy(ret->origen,IP_SERVIDOR);
         strcpy(ret->msg, contenido);
         strcpy(ret->destino, ipDestino);
 
-        ret->dest_puerto = puerto;
+        ret->dest_puerto = puertoMulticast;
         ret->multicast = multicast;
 
         return ret;
@@ -174,19 +180,19 @@ char* getConected(){
 }
 
 int processGetConnectedMsg(char* ip, int puerto) {
-        char contenido[MAX_TEXTO];
-        pthread_mutex_lock(&clientesMutex);
-        if (Clientes->find(ip) != Clientes->end()) {
-                Cliente * cli = Clientes->at(ip);
-                cli->ult_actividad = time(0);
-                sprintf(contenido, "%s %s", CONNECTED, getConected());
-                pthread_mutex_unlock(&clientesMutex);
-                Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
-                encolarMensaje(mensaje);
-                return 0;
-        }
-        pthread_mutex_unlock(&clientesMutex);
-        return -1;
+  char contenido[MAX_TEXTO];
+  pthread_mutex_lock(&clientesMutex);
+  if (Clientes->find(ip) != Clientes->end()) {
+    Cliente * cli = Clientes->at(ip);
+    cli->ult_actividad = time(0);
+    sprintf(contenido, "%s %s", CONNECTED, getConected());
+    pthread_mutex_unlock(&clientesMutex);
+    Mensaje* mensaje = crearMensaje(ip, false, contenido);
+    encolarMensaje(mensaje);
+    return 0;
+  }
+  pthread_mutex_unlock(&clientesMutex);
+  return -1;
 }
 
 int processLoginMsg(char* ip, int puerto, char * msg) {
@@ -239,7 +245,7 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
                 char contenido[MAX_TEXTO];
                 sprintf(contenido, "%s %s %s", RELAYED_MESSAGE, cli->nick, str_contenido.c_str());
 
-                Mensaje* mensaje = crearMensaje(ipMulticast, puertoMulticast, true, contenido);
+                Mensaje* mensaje = crearMensaje(ipMulticast,true, contenido);
                 encolarMensaje(mensaje);
                 return 0;
 
@@ -273,7 +279,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
                         char contenido[MAX_TEXTO];
                         sprintf(contenido, "%s %s %s", PRIVATE_MESSAGE, cli->nick, str_recv_msg.c_str());
 
-                        Mensaje* mensaje = crearMensaje(dest_cli->ip, dest_cli->puerto, false, contenido);
+                        Mensaje* mensaje = crearMensaje(dest_cli->ip, false, contenido);
                         encolarMensaje(mensaje);
 
                         return 0;
@@ -536,7 +542,7 @@ void* receptorMensajes(void*) {
                          Clientes->erase(ip);
                          char contenido[MAX_TEXTO];
                          strcpy(contenido, GOODBYE);
-                         Mensaje * mensaje = crearMensaje(c->ip, c->puerto, false, contenido);
+                         Mensaje * mensaje = crearMensaje(c->ip, false, contenido);
                          encolarMensaje(mensaje);
                  }
                  pthread_mutex_unlock(&clientesMutex);
@@ -556,6 +562,8 @@ void init() {
 }
 
 int main(int argc, char** argv) {
+
+
   init();
 
   char* ipServidor = new char[MAX_IP_LENGTH];
