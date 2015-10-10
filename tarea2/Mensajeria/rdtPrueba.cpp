@@ -127,6 +127,8 @@ void updateSequenceNumber(TablaSecuencias* tabla, char* ip, int num){
   (*tabla)[ip]=num;
 }
 
+
+int multicastSeqEsp=-1;
 char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
   if(DEBUG) cout << "rdt_recibe inicio " << endl;
 
@@ -150,7 +152,7 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
     // cout << "rdt_recibe  nbytes" << nbytes << " sizeof(*mensaje)" << sizeof(*mensaje) << endl;
     char* ipFrom = inet_ntoa(addr.sin_addr);
     int puerto=ntohs(addr.sin_port);
-    int seqEsperado = getSequenceNumber(receptor, ipFrom);
+
     if(DEBUG) std::cout << "rdt_recibe Se recibe desde ipFrom:" << ipFrom << ":" << puerto << std::endl;
     if(DEBUG) cout << "rdt_recibe Se recibe => " << endl;
     if(DEBUG) printMensaje(mensaje);
@@ -161,23 +163,41 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
     // respuesta.mensaje="importa munia?";
     respuesta->esMulticast=mensaje->esMulticast;
     //envio ACK ok
-    if(mensaje->esMulticast){
+    /*if(mensaje->esMulticast){
       respuesta->seq=mensaje->seq;
     }else{
       respuesta->seq=seqEsperado;
+    }*/
+    //Siempre hay que hacer ACK del mensaje que te llega
+    respuesta->seq = mensaje->seq;
+
+    //Si es el primer multicast lo acepto
+    if (mensaje->esMulticast && (multicastSeqEsp < 0)) {
+            multicastSeqEsp = mensaje->seq;
     }
+
+
+    int seqEsperado = mensaje->esMulticast ? multicastSeqEsp : getSequenceNumber(receptor, ipFrom);
+
 
     if(DEBUG)  cout << "rdt_recibe Se envia =>" << endl;
     printMensaje(respuesta);
     addrlen  = sizeof(addr);
     if(DEBUG)  cout << "rdt_recibe Enviando..." << endl ;
     int result = sendto(soc, respuesta, sizeof(*respuesta), 0, (struct sockaddr *)&addr, addrlen);
-
+    if(DEBUG)  cout << "Nro de seq esperado: " << seqEsperado << endl ;
+    if(DEBUG)  cout << "Nro de seq recibido: " << mensaje->seq << endl ;
     if( (result>0) && (seqEsperado == mensaje->seq)){ //(&& result > 0 )
       //actualizo tabla
       int newSeq = (++seqEsperado)%2;
       // it->second = newSeq;
-      updateSequenceNumber(receptor, ipFrom, newSeq);
+      if (mensaje->esMulticast) {
+              multicastSeqEsp = newSeq;
+      }
+      else {
+              updateSequenceNumber(receptor, ipFrom, newSeq);
+      }
+
       ipEmisor = new char[MAX_IP_LENGTH];
       strcpy(ipEmisor, ipFrom);
       puertoEmisor = ntohs(addr.sin_port);
