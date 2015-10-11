@@ -16,6 +16,8 @@
 
 using namespace std;
 
+#define DEBUG false
+
 //global vars
 string usuario(USUARIO);
 
@@ -125,12 +127,14 @@ void updateSequenceNumber(TablaSecuencias* tabla, char* ip, int num){
   (*tabla)[ip]=num;
 }
 
+
+int multicastSeqEsp=-1;
 char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
+  if(DEBUG) cout << "rdt_recibe inicio " << endl;
+
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
-
   socklen_t addrlen;
-
   int nbytes;
   rdtMsj* mensaje = new rdtMsj;
 
@@ -139,19 +143,19 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
     addrlen  = sizeof(addr);
 
     //recibimos UDP
-    cout << "__DEBUG rdt_recive RECIBIR" << endl;
-    cout << "__DEBUG ERROR" << endl;
+    if(DEBUG) cout << "rdt_recibe recibiendo..." << endl;
     if ((nbytes = recvfrom(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
+      // if(DEBUG) cout << "__DEBUG ERROR" << endl;
       perror("recvfrom");
       exit(1);
     }
-    cout << "__DEBUG rdt_recive nbytes" << nbytes << " sizeof(*mensaje)" << sizeof(*mensaje) << endl;
+    // cout << "rdt_recibe  nbytes" << nbytes << " sizeof(*mensaje)" << sizeof(*mensaje) << endl;
     char* ipFrom = inet_ntoa(addr.sin_addr);
     int puerto=ntohs(addr.sin_port);
-    int seqEsperado = getSequenceNumber(receptor, ipFrom);
-    std::cout << "__DEBUG rdt_recive ipFrom:" << ipFrom << " puerto:" << puerto << std::endl;
-    cout << "__DEBUG rdt_recive recibi=>";
-    printMensaje(mensaje);
+
+    if(DEBUG) std::cout << "rdt_recibe Se recibe desde ipFrom:" << ipFrom << ":" << puerto << std::endl;
+    if(DEBUG) cout << "rdt_recibe Se recibe => " << endl;
+    if(DEBUG) printMensaje(mensaje);
 
     rdtMsj* respuesta = new rdtMsj;
     respuesta->esAck=true;
@@ -159,27 +163,46 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
     // respuesta.mensaje="importa munia?";
     respuesta->esMulticast=mensaje->esMulticast;
     //envio ACK ok
-    if(mensaje->esMulticast){
+    /*if(mensaje->esMulticast){
       respuesta->seq=mensaje->seq;
     }else{
       respuesta->seq=seqEsperado;
+    }*/
+    //Siempre hay que hacer ACK del mensaje que te llega
+    respuesta->seq = mensaje->seq;
+
+    //Si es el primer multicast lo acepto
+    if (mensaje->esMulticast && (multicastSeqEsp < 0)) {
+            multicastSeqEsp = mensaje->seq;
     }
 
-    cout << "__DEBUG rdt_recibe envio=>" ;
+
+    int seqEsperado = mensaje->esMulticast ? multicastSeqEsp : getSequenceNumber(receptor, ipFrom);
+
+
+    if(DEBUG)  cout << "rdt_recibe Se envia =>" << endl;
     printMensaje(respuesta);
     addrlen  = sizeof(addr);
+    if(DEBUG)  cout << "rdt_recibe Enviando..." << endl ;
     int result = sendto(soc, respuesta, sizeof(*respuesta), 0, (struct sockaddr *)&addr, addrlen);
-
+    if(DEBUG)  cout << "Nro de seq esperado: " << seqEsperado << endl ;
+    if(DEBUG)  cout << "Nro de seq recibido: " << mensaje->seq << endl ;
     if( (result>0) && (seqEsperado == mensaje->seq)){ //(&& result > 0 )
       //actualizo tabla
       int newSeq = (++seqEsperado)%2;
       // it->second = newSeq;
-      updateSequenceNumber(receptor, ipFrom, newSeq);
+      if (mensaje->esMulticast) {
+              multicastSeqEsp = newSeq;
+      }
+      else {
+              updateSequenceNumber(receptor, ipFrom, newSeq);
+      }
+
       ipEmisor = new char[MAX_IP_LENGTH];
       strcpy(ipEmisor, ipFrom);
       puertoEmisor = ntohs(addr.sin_port);
       //todo ok :)
-      printf("DEBUG::Mensaje recibido: %s\n", mensaje->mensaje);
+      if(DEBUG) printf("rdt_recibe Mensaje recibido: %s\n", mensaje->mensaje);
       char* retMen = new char[MSGBUFSIZE];
       strcpy(retMen, mensaje->mensaje);
 
@@ -191,6 +214,8 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
 }
 
 void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
+
+  if (DEBUG) cout << "rdt_sendto=> mensaje: " << mensajeToSend << " ip:" << ip << " puerto:" << puerto;
 
   int nbytes;
   socklen_t addrlen;
@@ -215,14 +240,14 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
     mensaje->esMulticast=false;
     mensaje->seq = getSequenceNumber(emisor, ip);
 
-    cout << "__DEBUG envio rdt a ip:" << ip << ":" << puerto << endl;
+    if (DEBUG) cout << "rdt_send enviando...";
     int result = sendto(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, addrlen);
 
     if(result >0){
       rdtMsj* mensajeRcb = new rdtMsj;
       memset(mensajeRcb , 0, sizeof(*mensajeRcb));
       //envio ACK ok
-      cout << "__DEBUG espero ack con seq:" << seqEsperado << endl;
+      if(DEBUG) cout << "rdt_send espero ACK con seq:" << seqEsperado << endl;
       if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
         perror("recvfrom");
         exit(1);
@@ -230,8 +255,10 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
       //char* ipFrom = inet_ntoa(addr.sin_addr);
       char* ipFrom = inet_ntoa(addr.sin_addr);
-      cout << "__DEBUG recibi:" ;
-      printMensaje(mensajeRcb);
+
+      if(DEBUG) cout << "rdt_send recibio mensaje:" ;
+      if(DEBUG) printMensaje(mensajeRcb);
+
       if( (strcmp(ipFrom, ip)==0) && (mensajeRcb->esAck) &&  (mensajeRcb->seq==seqEsperado)){
         //mismo ip
         updateSequenceNumber(emisor, ip, (++seqEsperado)%2);
@@ -239,7 +266,8 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
         return ;
       }
       else{
-        printf("DEBUG::Error: :(\n");
+        printf("rdt_send Error:");
+        cout << "rdt_send DEBUG values (strcmp(ipFrom, ip)==0): " << (strcmp(ipFrom, ip)==0) <<  " (mensajeRcb->esAck):" << (mensajeRcb->esAck) << " (mensajeRcb->seq==seqEsperado):" <<  (mensajeRcb->seq==seqEsperado) << endl;
       }
     }
 

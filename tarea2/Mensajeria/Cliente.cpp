@@ -36,8 +36,8 @@ using namespace std;
 #define PRIVATE_MESSAGE "PRIVATE_MESSAGE"
 
 // puertos para los sockets del cliente
-#define PUERTO_COMANDO 8888
-#define PUERTO_MENSAJES 9999
+#define PUERTO_COMANDO 9999
+
 
 // constantes
 #define MAX_LARGO_MENSAJE 200
@@ -65,9 +65,16 @@ void * receptorMensajes(void*) {
   int puertoEmisor;
   int i = 0;
   while (!meVoy) {
+
     comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
     printf("Mensaje (%d) de %s:%d recibido :: %s ::\n", i, ipEmisor, puertoEmisor, comando);
     char* result;
+
+    //recibo y parseo mensaje, se bloquea hasta que recibe un mensaje
+    cout << "--Espero por mensaje..." << endl;
+    comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
+    printf("--Mensaje (%d) recibido :: %s ::!!\n", i, comando);
+    printf("--Origen del mensaje: %s:%d", ipEmisor, puertoEmisor);
     if (strcmp(comando, RELAYED_MESSAGE) == 0) {
       cout << "Mensaje multicast: " << comando << endl;
       // result = strtok(comando," ");
@@ -117,9 +124,8 @@ void mensajeria() {
 
   string comando;
   while (!meVoy) {
-
     //leo de pantalla estandar un comando
-    cout << ">";
+    cout << "++Ingrese comando >";
     getline(cin, comando);
     error = false;
     //parseo comando
@@ -127,31 +133,30 @@ void mensajeria() {
     if (comando.find(LOGOUT) == 0) {
       meVoy = true;
       sprintf(mensaje, "%s%s", LOGOUT, CR);
-      printf("Se ingreso el comando %s\n", mensaje);
       //tengo que liberar recursos?
     } else if (comando.find(GET_CONNECTED) == 0) {
       //pido lista de clientes conectados
       sprintf(mensaje, "%s%s", GET_CONNECTED, CR);
-      printf("Se ingreso el comando %s\n", mensaje);
     } else if (comando.find(MESSAGE) == 0) {
       //envia un mensaje a todos los clientes
       sscanf(comando.data(), "%*s %[^\n]", texto);
       sprintf(mensaje, "%s %s%s", MESSAGE, texto, CR);
-      printf("Se ingreso el comando %s\n", mensaje);
       //hay que setear el mensaje
     } else if (comando.find(PRIVATE_MESSAGE) == 0) {
       //envia un mensaje privado
       sscanf(comando.data(), "%*s %s %[^\n]", nick, texto);
       sprintf(mensaje, "%s <%s> %s%s", PRIVATE_MESSAGE, nick, texto, CR);
-      printf("Se ingreso el comando %s\n", mensaje);
       //hay que setear el mensaje
     } else {
+      sprintf(mensaje, "Error!");
       error = true;
     }
+    printf("++Se ingreso el comando %s\n", mensaje);
     // si no hubo error envio el mensaje al servidor
     if (!error) {
-      cout << "Enviando:::" << mensaje << ":::" << endl;
+      cout << "++Enviando:::" << mensaje << ":::" << endl;
       rdt_sendto(socketComandos, mensaje, IPservidor, puertoServidor);
+      cout << "++Mensaje Enviado " << endl;
     } else {
       cout << "comando no reconocido" << endl;
     }
@@ -165,7 +170,7 @@ int main(int argc, char** argv) {
 
   // cargo los parametros (apodo, IP y puerto del servidor)
   int puertoComandos(PUERTO_COMANDO);
-  int puertoMensajes(PUERTO_MENSAJES);
+  int puertoMensajes(PUERTO_MENSAJES_CLI);
 
   if (argc < 4) {
     printf("Uso: ./cliente <apodo> <IP servidor> <puerto servidor>\n");
@@ -176,8 +181,11 @@ int main(int argc, char** argv) {
   puertoServidor = atoi(argv[3]);
 
   // creo los sockets que va a usar
+  cout << endl <<"socketMensajes-receptor" ;
   socketMensajes = CrearSocket(puertoMensajes, true);
+  cout << "socketComandos-emisor" ;
   socketComandos = CrearSocket(puertoComandos, false);
+  cout << endl;
 
   if (socketMensajes < 0 || socketComandos < 0) {
     printf("No se pudo iniciar el cliente");

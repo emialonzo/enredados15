@@ -50,6 +50,12 @@ typedef struct Mensaje {
         bool  multicast;
 
 } Mensaje;
+
+
+
+void printMensaje(Mensaje* msg){
+  cout << "msg->destino:" << msg->destino << " msg->dest_puerto:" << msg->dest_puerto << " msg->origen:" << msg->origen << " msg->orig_puerto:" << msg->orig_puerto << " msg->msg:" << msg->msg << " msg->multicast:" << msg->multicast << endl;
+}
 typedef map<string, Cliente*> MapClientes;
 
 typedef enum  {COM_LOGIN, COM_LOGOUT, COM_GET_CONNECTED, COM_MSG, COM_PVT_MSG, COM_INVALID} MsgComand;
@@ -66,7 +72,7 @@ ColaMensajes* colaMensajes = new ColaMensajes;
 char* ipServidor ;//= IP_SERVIDOR;
 int  puertoServidor = PUERTO_SERVIDOR;
 
-char* ipMulticast ;//= IP_MULTICAST;
+char* ipMulticast(IP_MULTICAST);//= IP_MULTICAST;
 int puertoMulticast = PUERTO_MULTICAST;
 
 pthread_mutex_t queueMutex;
@@ -128,14 +134,14 @@ Cliente* getClienteByNick(const char* nick) {
 
 
 
-Mensaje* crearMensaje(char* ipDestino,int puerto, bool multicast, char* contenido) {
+Mensaje* crearMensaje(char* ipDestino, bool multicast, char* contenido) {
 
         Mensaje* ret = new Mensaje();
         strcpy(ret->origen,IP_SERVIDOR);
         strcpy(ret->msg, contenido);
         strcpy(ret->destino, ipDestino);
 
-        ret->dest_puerto = puerto;
+        ret->dest_puerto = puertoMulticast;
         ret->multicast = multicast;
 
         return ret;
@@ -169,23 +175,24 @@ char* getConected(){
         else {
                 sprintf(retStr, "<No hay usuarios conectados>");
         }
+
         return retStr;
 }
 
 int processGetConnectedMsg(char* ip, int puerto) {
-        char contenido[MAX_TEXTO];
-        pthread_mutex_lock(&clientesMutex);
-        if (Clientes->find(ip) != Clientes->end()) {
-                Cliente * cli = Clientes->at(ip);
-                cli->ult_actividad = time(0);
-                sprintf(contenido, "%s %s", CONNECTED, getConected());
-                pthread_mutex_unlock(&clientesMutex);
-                Mensaje* mensaje = crearMensaje(ip, puerto, false, contenido);
-                encolarMensaje(mensaje);
-                return 0;
-        }
-        pthread_mutex_unlock(&clientesMutex);
-        return -1;
+  char contenido[MAX_TEXTO];
+  pthread_mutex_lock(&clientesMutex);
+  if (Clientes->find(ip) != Clientes->end()) {
+    Cliente * cli = Clientes->at(ip);
+    cli->ult_actividad = time(0);
+    sprintf(contenido, "%s %s", CONNECTED, getConected());
+    pthread_mutex_unlock(&clientesMutex);
+    Mensaje* mensaje = crearMensaje(ip, false, contenido);
+    encolarMensaje(mensaje);
+    return 0;
+  }
+  pthread_mutex_unlock(&clientesMutex);
+  return -1;
 }
 
 int processLoginMsg(char* ip, int puerto, char * msg) {
@@ -198,13 +205,16 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 strcpy(cli->nick, nick.c_str());
                 strcpy(cli->ip, ip);
                 cli->cantMensajes = 0;
-                cli->puerto = puerto;
+                //cli->puerto = puerto;
+                cli->puerto = PUERTO_MENSAJES_CLI;
                 cli->ult_actividad = time(0);
                 Clientes->insert(make_pair(cli->ip, cli));
                 pthread_mutex_unlock(&clientesMutex);
                 cantConexiones++;
+                cout << "Cliente logueado" << endl;
                 return 0;
         }
+        cout << "ERROR: El cliente ip" << ip << ":" << puerto << endl;
         pthread_mutex_unlock(&clientesMutex);
         return -1;
 }
@@ -212,6 +222,7 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
 int processLogut(char* ip, int puerto) {
         pthread_mutex_lock(&clientesMutex);
         Clientes->erase(ip);
+        cantConexiones--;
         pthread_mutex_unlock(&clientesMutex);
         //TODO Ver si se manda un goodbye o no cuando se hace un logout
         //char contenido[MAX_TEXTO] = GOODBYE;
@@ -234,7 +245,7 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
                 char contenido[MAX_TEXTO];
                 sprintf(contenido, "%s %s %s", RELAYED_MESSAGE, cli->nick, str_contenido.c_str());
 
-                Mensaje* mensaje = crearMensaje(ipMulticast, puertoMulticast, true, contenido);
+                Mensaje* mensaje = crearMensaje(ipMulticast,true, contenido);
                 encolarMensaje(mensaje);
                 return 0;
 
@@ -268,7 +279,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
                         char contenido[MAX_TEXTO];
                         sprintf(contenido, "%s %s %s", PRIVATE_MESSAGE, cli->nick, str_recv_msg.c_str());
 
-                        Mensaje* mensaje = crearMensaje(dest_cli->ip, dest_cli->puerto, false, contenido);
+                        Mensaje* mensaje = crearMensaje(dest_cli->ip, false, contenido);
                         encolarMensaje(mensaje);
 
                         return 0;
@@ -280,28 +291,28 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
 
 
-void parseMessage(Cliente* c, char* mensaje){
-        string comando = mensaje;
-
-        // if (comando.find(LOGIN) == 0) {
-        //         //obtengo nombre de usuario
-        //         strcpy(c->nick,mensaje);
-        //         loginCliente(c);
-        // } else
-        if (comando.find(LOGOUT) == 0) {
-                //desloegueo al usuario
-                logOut(c);
-        } else if (comando.find(GET_CONNECTED) == 0) {
-                //envio conectados
-                //char* conectados = getConected();
-        } else if (comando.find(MESSAGE) == 0) {
-                //envio mensaje multicast
-        } else if (comando.find(PRIVATE_MESSAGE) == 0) {
-                //envio mensaje privado
-        } else {
-                std::cout << "Ha llegado un mensaje invallido hacia el servidor." << std::endl;
-        }
-}
+// void parseMessage(Cliente* c, char* mensaje){
+//         string comando = mensaje;
+//
+//         if (comando.find(LOGIN) == 0) {
+//                 //obtengo nombre de usuario
+//                 strcpy(c->nick,mensaje);
+//                 loginCliente(c);
+//         } else
+//         if (comando.find(LOGOUT) == 0) {
+//                 //desloegueo al usuario
+//                 logOut(c);
+//         } else if (comando.find(GET_CONNECTED) == 0) {
+//                 //envio conectados
+//                 //char* conectados = getConected();
+//         } else if (comando.find(MESSAGE) == 0) {
+//                 //envio mensaje multicast
+//         } else if (comando.find(PRIVATE_MESSAGE) == 0) {
+//                 //envio mensaje privado
+//         } else {
+//                 std::cout << "Ha llegado un mensaje invallido hacia el servidor." << std::endl;
+//         }
+// }
 
 MsgComand getCommandFromMsg(char* msg) {
         string comando = msg;
@@ -324,27 +335,27 @@ MsgComand getCommandFromMsg(char* msg) {
 
 
 
-void* debug(){
-        cout << "::DEBUG:: escribe ip de cliente" << endl;
-        string ip;
-        getline(cin, ip);
-        cout << "::DEBUG:: escribe un mensaje que llega desde cliente" << endl;
-        cout << ">";
-        string comando;
-        getline(cin, comando);
-
-        char * cstrComando = new char [comando.length()+1];
-        strcpy (cstrComando, comando.c_str());
-
-        char * cstrIp = new char [comando.length()+1];
-        strcpy (cstrIp, comando.c_str());
-
-        Cliente* c = getCliente(cstrIp);
-
-
-        parseMessage(c, cstrComando);
-        return NULL;
-};
+// void* debug(){
+//         cout << "::DEBUG:: escribe ip de cliente" << endl;
+//         string ip;
+//         getline(cin, ip);
+//         cout << "::DEBUG:: escribe un mensaje que llega desde cliente" << endl;
+//         cout << ">";
+//         string comando;
+//         getline(cin, comando);
+//
+//         char * cstrComando = new char [comando.length()+1];
+//         strcpy (cstrComando, comando.c_str());
+//
+//         char * cstrIp = new char [comando.length()+1];
+//         strcpy (cstrIp, comando.c_str());
+//
+//         Cliente* c = getCliente(cstrIp);
+//
+//
+//         parseMessage(c, cstrComando);
+//         return NULL;
+// };
 
 void* debugRdt(){
         cout << ">";
@@ -464,30 +475,39 @@ void* receptorMensajes(void*) {
                 //appMsg* msg = test_rdt_rcv(socReceptor);
                 char* ipEmisor;
                 int puertoEmisor;
+                cout << "Esperando comando de cliente..." << endl;
                 char* msg = rdt_recibe(socReceptor, ipEmisor, puertoEmisor);
+                cout << "  **Comando recibido:" << msg << "**" << endl;
 
                 MsgComand command = getCommandFromMsg(msg);
-
+                char strComandoAux[40];
                 switch (command) {
                         case COM_LOGIN:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_LOGIN",COM_LOGIN, msg);
                                 processLoginMsg(ipEmisor, puertoEmisor, msg);
                                 break;
                         case COM_GET_CONNECTED:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_GET_CONNECTED", COM_GET_CONNECTED, msg);
                                 processGetConnectedMsg(ipEmisor, puertoEmisor);
                                 break;
                         case COM_MSG:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_MSG", COM_MSG, msg);
                                 processMulticastMessage(ipEmisor, msg);
                                 break;
                         case COM_PVT_MSG:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "login", COM_PVT_MSG, msg);
                                 processPrivatetMessage(ipEmisor, msg);
                                 break;
                         case COM_LOGOUT:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_LOGOUT", COM_LOGOUT, msg);
                                 processLogut(ipEmisor, puertoEmisor);
                                 break;
                         case COM_INVALID:
+                                sprintf(strComandoAux, "**%s(%d)=>%s", "COM_INVALID", COM_INVALID, msg);
                                 //TODO ver que se hace con un caracter valido
                                 break;
                 }
+                cout << strComandoAux << endl ;
         }
         return NULL;
 }
@@ -522,7 +542,7 @@ void* receptorMensajes(void*) {
                          Clientes->erase(ip);
                          char contenido[MAX_TEXTO];
                          strcpy(contenido, GOODBYE);
-                         Mensaje * mensaje = crearMensaje(c->ip, c->puerto, false, contenido);
+                         Mensaje * mensaje = crearMensaje(c->ip, false, contenido);
                          encolarMensaje(mensaje);
                  }
                  pthread_mutex_unlock(&clientesMutex);
@@ -548,16 +568,17 @@ int main(int argc, char** argv) {
 
   char* ipServidor = new char[MAX_IP_LENGTH];
   strcpy(ipServidor, IP_SERVIDOR);
-  char* ipMulticast = new char[MAX_IP_LENGTH];
-  strcpy(ipMulticast, IP_MULTICAST);
+
+  //char* ipMulticast = new char[MAX_IP_LENGTH];
+  //strcpy(ipMulticast, IP_MULTICAST);
 
 
-  //FIXME
-  char* ipClientePrueba = new char[MAX_IP_LENGTH];
-  char* msjPrueba = new char[MAX_IP_LENGTH];
-  strcpy(ipClientePrueba,"172.16.105.50");
-  strcpy(msjPrueba,"LOGIN Debug");
-  processLoginMsg(ipClientePrueba,8888, msjPrueba);
+  // //FIXME
+  // char* ipClientePrueba = new char[MAX_IP_LENGTH];
+  // char* msjPrueba = new char[MAX_IP_LENGTH];
+  // strcpy(ipClientePrueba,"172.16.105.50");
+  // strcpy(msjPrueba,"LOGIN Debug");
+  // processLoginMsg(ipClientePrueba,8888, msjPrueba);
   //DEBUG
 
         //FIXME aca no tengo claro que pasarle.
@@ -576,8 +597,8 @@ int main(int argc, char** argv) {
         pthread_t emisorHilo;
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
-        pthread_t monitorHilo;
-        pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
+        //pthread_t monitorHilo;
+        //pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
 
         consola();
 
