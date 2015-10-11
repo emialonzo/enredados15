@@ -126,6 +126,9 @@ Cliente* getClienteByNick(const char* nick) {
                 if (strcmp(ret->nick, nick) == 0) {
                         return ret;
                 }
+                else {
+                        ret  = NULL;
+                }
                 ++iter;
         }
 
@@ -278,7 +281,6 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
                         char contenido[MAX_TEXTO];
                         sprintf(contenido, "%s %s %s", PRIVATE_MESSAGE, cli->nick, str_recv_msg.c_str());
-
                         Mensaje* mensaje = crearMensaje(dest_cli->ip, false, contenido);
                         encolarMensaje(mensaje);
 

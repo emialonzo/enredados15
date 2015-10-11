@@ -143,7 +143,7 @@ void mensajeria() {
     } else if (comando.find(PRIVATE_MESSAGE) == 0) {
       //envia un mensaje privado
       sscanf(comando.data(), "%*s %s %[^\n]", nick, texto);
-      sprintf(mensaje, "%s <%s> %s%s", PRIVATE_MESSAGE, nick, texto, CR);
+      sprintf(mensaje, "%s %s %s%s", PRIVATE_MESSAGE, nick, texto, CR);
       //hay que setear el mensaje
     } else {
       sprintf(mensaje, "Error!");
