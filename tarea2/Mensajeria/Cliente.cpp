@@ -58,21 +58,17 @@ int socketComandos;
 bool meVoy;
 
 void * receptorMensajes(void*) {
-  // printf("Principio del hilo de recepcion de mensajes.\n");
-  int i = 0;
-  // char* comando; //= new char[50];
-  // char comando[MAX_LARGO_MENSAJE]; //= new char[50];
-  // memset(comando,0,MAX_LARGO_MENSAJE);
+  printf("Empiezo a recibir mensajes\n");
+
   char* comando;
-
-  //iniRdt();
-  //printf("voy a entrar al loop del receptor, puerto cliente:%d\n", PUERTO_CLIENTE);
-
-  //int socketCliente = CrearSocket(PUERTO_CLIENTE, true);
   char* ipEmisor;
   int puertoEmisor;
-
+  int i = 0;
   while (!meVoy) {
+
+    comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
+    printf("Mensaje (%d) de %s:%d recibido :: %s ::\n", i, ipEmisor, puertoEmisor, comando);
+    char* result;
 
     //recibo y parseo mensaje, se bloquea hasta que recibe un mensaje
     cout << "--Espero por mensaje..." << endl;
@@ -81,9 +77,12 @@ void * receptorMensajes(void*) {
     printf("--Origen del mensaje: %s:%d", ipEmisor, puertoEmisor);
     if (strcmp(comando, RELAYED_MESSAGE) == 0) {
       cout << "Mensaje multicast: " << comando << endl;
-      //obtenego emisor
-      //obtengo mensaje
-      //modifico estructoruas
+      // result = strtok(comando," ");
+      // result = strtok(comando," ");
+      // cout << "Comando: " << result[0] << endl;
+      // cout << "Emisor: " << result[1] << endl;
+      // cout << "Mensaje: " << result[2] << endl;
+      // printf("Mensaje de %s: %s", result[1],result[2]);
     } else if (strcmp(comando, PRIVATE_MESSAGE) == 0) {
       cout << "Mensaje privado: " << comando << endl;
       //obtenego emisor
@@ -91,14 +90,16 @@ void * receptorMensajes(void*) {
       //modifico estructoruas
     } else if (strcmp(comando, CONNECTED) == 0) {
       cout << "Conectados: " << comando << endl;
-      //obtiene los clientes conectados separados por pipe
-      //parsea lista de clientes conectados
-      //altera estructura
+      result = strtok(comando, " ");
+      printf("Comando recibido: %s\nLos usuarios conectados se listan a continuación:\n", result);
+      result = strtok(comando, "|");
+      while (result != NULL) {
+        printf("%s\n", result);
+        result = strtok(NULL, "|");
+      }
     } else if (strcmp(comando, GOODBYE) == 0) {
-      cout << "Me desconectaron: " << comando << endl;
+      printf("Me desconectaron: %s (dejo la memoria colgada y nos beisbol)\n",comando);
       meVoy = true;
-      //servidor se fue
-      //cierro cliente de forma segura
     }
     i++;
   }
@@ -112,6 +113,7 @@ void mensajeria() {
   pthread_t idHilo;
   pthread_create(&idHilo, NULL, receptorMensajes, NULL);
   sleep(4);
+  printf("Empiezo a enviar comandos\n");
 
   // Hilo 2: para enviar comandos al servidor rdt_send();
   //inicializo
