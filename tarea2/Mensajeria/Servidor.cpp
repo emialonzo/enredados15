@@ -28,9 +28,11 @@ using namespace std;
 #define CONNECTED "CONNECTED"
 #define GOODBYE "GOODBYE"
 
+#define PROMPT ">>>"
+
 #define TTL_CLIENTES 15
 #define MONITOR_TIME 30
-
+#define DEBUG false
 
 
 typedef struct Cliente {
@@ -53,9 +55,7 @@ typedef struct Mensaje {
 
 
 
-void printMensaje(Mensaje* msg){
-  cout << "msg->destino:" << msg->destino << " msg->dest_puerto:" << msg->dest_puerto << " msg->origen:" << msg->origen << " msg->orig_puerto:" << msg->orig_puerto << " msg->msg:" << msg->msg << " msg->multicast:" << msg->multicast << endl;
-}
+
 typedef map<string, Cliente*> MapClientes;
 
 typedef enum  {COM_LOGIN, COM_LOGOUT, COM_GET_CONNECTED, COM_MSG, COM_PVT_MSG, COM_INVALID} MsgComand;
@@ -137,10 +137,10 @@ Cliente* getClienteByNick(const char* nick) {
 
 
 
-Mensaje* crearMensaje(char* ipDestino, bool multicast, char* contenido) {
+Mensaje* crearMensaje(char* ipDestino, char* ipOrigen, bool multicast, char* contenido) {
 
         Mensaje* ret = new Mensaje();
-        strcpy(ret->origen,IP_SERVIDOR);
+        strcpy(ret->origen, ipOrigen);
         strcpy(ret->msg, contenido);
         strcpy(ret->destino, ipDestino);
 
@@ -148,6 +148,27 @@ Mensaje* crearMensaje(char* ipDestino, bool multicast, char* contenido) {
         ret->multicast = multicast;
 
         return ret;
+}
+
+void printMensajeEnviado(Mensaje* msg){
+        const char* separator = "****************************************";
+        cout << endl << separator << endl;
+        cout << "MENSAJE ENVIADO" << endl;
+        cout << "Origen: "<< msg->origen << ":" << msg->orig_puerto << endl;
+        cout << "Destino: "<< msg->destino << ":" << msg->dest_puerto << endl;
+        cout << "Tipo: ";
+        if (msg->multicast) {
+                 cout << "MULTICAST";
+        }
+        else
+        {
+                cout << "UNICAST";
+        }
+        //cout << endl << "Tipo: " << msg->multicast ? "MULTICAST" : "UNICAST" << endl;
+        cout << endl << "CONTENIDO" << endl;
+        cout << msg->msg << endl;
+        cout << separator << endl << PROMPT;
+        //cout << "msg->destino:" << msg->destino << " msg->dest_puerto:" << msg->dest_puerto << " msg->origen:" << msg->origen << " msg->orig_puerto:" << msg->orig_puerto << " msg->msg:" << msg->msg << " msg->multicast:" << msg->multicast << endl;
 }
 
 void encolarMensaje(Mensaje* mensaje) {
@@ -190,7 +211,7 @@ int processGetConnectedMsg(char* ip, int puerto) {
     cli->ult_actividad = time(0);
     sprintf(contenido, "%s %s", CONNECTED, getConected());
     pthread_mutex_unlock(&clientesMutex);
-    Mensaje* mensaje = crearMensaje(ip, false, contenido);
+    Mensaje* mensaje = crearMensaje(ip, ip, false, contenido);
     encolarMensaje(mensaje);
     return 0;
   }
@@ -214,7 +235,7 @@ int processLoginMsg(char* ip, int puerto, char * msg) {
                 Clientes->insert(make_pair(cli->ip, cli));
                 pthread_mutex_unlock(&clientesMutex);
                 cantConexiones++;
-                cout << "Cliente logueado" << endl;
+                if (DEBUG) cout << "Cliente logueado" << endl;
                 return 0;
         }
         cout << "ERROR: El cliente ip" << ip << ":" << puerto << endl;
@@ -248,7 +269,7 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
                 char contenido[MAX_TEXTO];
                 sprintf(contenido, "%s %s %s", RELAYED_MESSAGE, cli->nick, str_contenido.c_str());
 
-                Mensaje* mensaje = crearMensaje(ipMulticast,true, contenido);
+                Mensaje* mensaje = crearMensaje(ipMulticast, sourceIp,true, contenido);
                 encolarMensaje(mensaje);
                 return 0;
 
@@ -281,7 +302,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
                         char contenido[MAX_TEXTO];
                         sprintf(contenido, "%s %s %s", PRIVATE_MESSAGE, cli->nick, str_recv_msg.c_str());
-                        Mensaje* mensaje = crearMensaje(dest_cli->ip, false, contenido);
+                        Mensaje* mensaje = crearMensaje(dest_cli->ip, sourceIp, false, contenido);
                         encolarMensaje(mensaje);
 
                         return 0;
@@ -402,7 +423,7 @@ int consola() {
         char c;
 
         do {
-          cout << ">" ;
+          cout << PROMPT ;
                 string comando;
                 getline(cin, comando);
                 c=comando.c_str()[0];
@@ -464,7 +485,8 @@ void* emisorMensajes(void*) {
                 }
                 pthread_mutex_unlock(&clientesMutex);
                 cantMensajes++;
-
+                printMensajeEnviado(msg);
+                delete(msg);
         }
         return NULL;
 }
@@ -477,9 +499,9 @@ void* receptorMensajes(void*) {
                 //appMsg* msg = test_rdt_rcv(socReceptor);
                 char* ipEmisor;
                 int puertoEmisor;
-                cout << "Esperando comando de cliente..." << endl;
+                if (DEBUG) cout << "Esperando comando de cliente..." << endl;
                 char* msg = rdt_recibe(socReceptor, ipEmisor, puertoEmisor);
-                cout << "  **Comando recibido:" << msg << "**" << endl;
+                if (DEBUG) cout << "  **Comando recibido:" << msg << "**" << endl;
 
                 MsgComand command = getCommandFromMsg(msg);
                 char strComandoAux[40];
@@ -509,7 +531,7 @@ void* receptorMensajes(void*) {
                                 //TODO ver que se hace con un caracter valido
                                 break;
                 }
-                cout << strComandoAux << endl ;
+                if (DEBUG) cout << strComandoAux << endl ;
         }
         return NULL;
 }
@@ -540,12 +562,14 @@ void* receptorMensajes(void*) {
                  while (!aBorrar.empty()) {
                          string ip = aBorrar.front();
                          aBorrar.pop();
-                         Cliente* c  = Clientes->at(ip);
+
                          Clientes->erase(ip);
-                         char contenido[MAX_TEXTO];
-                         strcpy(contenido, GOODBYE);
-                         Mensaje * mensaje = crearMensaje(c->ip, false, contenido);
-                         encolarMensaje(mensaje);
+                         //TODO cuando se saca a un cliente se le envia algo. pa mi que no se
+                         //char contenido[MAX_TEXTO];
+                         //strcpy(contenido, GOODBYE);
+                         //Cliente* c  = Clientes->at(ip);
+                         //Mensaje * mensaje = crearMensaje(c->ip, false, contenido);
+                         //encolarMensaje(mensaje);
                  }
                  pthread_mutex_unlock(&clientesMutex);
 
@@ -566,31 +590,20 @@ void init() {
 int main(int argc, char** argv) {
 
 
-  init();
+        init();
 
-  char* ipServidor = new char[MAX_IP_LENGTH];
-  strcpy(ipServidor, IP_SERVIDOR);
+        char* ipServidor = new char[MAX_IP_LENGTH];
+        strcpy(ipServidor, IP_SERVIDOR);
 
-  //char* ipMulticast = new char[MAX_IP_LENGTH];
-  //strcpy(ipMulticast, IP_MULTICAST);
-
-
-  // //FIXME
-  // char* ipClientePrueba = new char[MAX_IP_LENGTH];
-  // char* msjPrueba = new char[MAX_IP_LENGTH];
-  // strcpy(ipClientePrueba,"172.16.105.50");
-  // strcpy(msjPrueba,"LOGIN Debug");
-  // processLoginMsg(ipClientePrueba,8888, msjPrueba);
-  //DEBUG
 
         //FIXME aca no tengo claro que pasarle.
-        std::cout << "socEmisor:" ;
+        if (DEBUG) std::cout << "socEmisor:" ;
         socEmisor = CrearSocket(puertoServidor+1, false);
-        cout << socEmisor << std::endl;
+        if (DEBUG) cout << socEmisor << std::endl;
 
-        std::cout << "socReceptor" ;
+        if (DEBUG) std::cout << "socReceptor" ;
         socReceptor = CrearSocket(puertoServidor, false);
-        cout << socReceptor << std::endl;
+        if (DEBUG) cout << socReceptor << std::endl;
 
 
         pthread_t receptorHilo;

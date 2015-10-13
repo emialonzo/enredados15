@@ -54,7 +54,7 @@ int CrearSocket(int puerto, bool multicast){
     perror("No se pudo crear el socket");
     exit(0);
   }
-  cout << "CrearSocket=> puerto:" << puerto << ", multicast:" << multicast << endl;
+  if (DEBUG) cout << "CrearSocket=> puerto:" << puerto << ", multicast:" << multicast << endl;
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port = htons(puerto);
@@ -181,7 +181,7 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
 
 
     if(DEBUG)  cout << "rdt_recibe Se envia =>" << endl;
-    printMensaje(respuesta);
+    if (DEBUG) printMensaje(respuesta);
     addrlen  = sizeof(addr);
     if(DEBUG)  cout << "rdt_recibe Enviando..." << endl ;
     int result = sendto(soc, respuesta, sizeof(*respuesta), 0, (struct sockaddr *)&addr, addrlen);
@@ -308,7 +308,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
   while(true){
     //envio mensaje a multicast
     cout << "__DEBUG-:RDT sendMulticast, Contendio=>" ;
-    printMensaje(mensaje);
+    if (DEBUG) printMensaje(mensaje);
     cout << "socket:" << soc << endl;
     int result = sendto(soc, (char*)mensaje, sizeof(*mensaje) , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
     //int result = sendto(soc, (char*)prueba , sizeof(char)*MAX_LARGO_MENSAJE , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
@@ -327,7 +327,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
           exit(1);
         }
         cout << "__DEBUG-:RDT send muticas, RECIBI=>" ;
-        printMensaje(mensajeRcb);
+        if (DEBUG) printMensaje(mensajeRcb);
 
         char* ipFrom = inet_ntoa(addr.sin_addr);
         int puerto=ntohs(addr.sin_port);
