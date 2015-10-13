@@ -260,6 +260,7 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
       if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
         perror("SALTO ESE TIMER");
         enviarCorrecto = false;
+        sleep(100);
       }
 
       if (enviarCorrecto) {
@@ -328,32 +329,39 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
     int cantClientes=tablaClientes->size();
     int ackRecibidosOk=0;
     if(result >0){ //si se envio el mensaje
-
-      while(cantClientes>ackRecibidosOk){
+      bool enviarCorrecto = true;
+      struct timeval tv;
+      tv.tv_sec = 0;
+      tv.tv_usec = 100000;
+      if (setsockopt(soc, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+          perror("Error");
+      }
+      while (cantClientes>ackRecibidosOk && enviarCorrecto ) {
         memset(mensajeRcb , 0, sizeof(*mensajeRcb));
         memset(&addr, 0, sizeof(struct sockaddr_in));
         cout << "__DEBUG espero ack" << endl;
         if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
-          cout << "Error extranio" << endl;
-          perror("recvfrom");
-          exit(1);
+          perror("SALTO ESE TIMER");
+          enviarCorrecto = false;
         }
-        cout << "__DEBUG-:RDT send muticas, RECIBI=>" ;
-        if (DEBUG) printMensaje(mensajeRcb);
+        if (enviarCorrecto) {
+          cout << "__DEBUG-:RDT send muticas, RECIBI=>" ;
+          if (DEBUG) printMensaje(mensajeRcb);
 
-        char* ipFrom = inet_ntoa(addr.sin_addr);
-        int puerto=ntohs(addr.sin_port);
-        char* claveCliente = new char[20];
-        sprintf(claveCliente, "%s:%d", ipFrom, puerto);
+          char* ipFrom = inet_ntoa(addr.sin_addr);
+          int puerto=ntohs(addr.sin_port);
+          char* claveCliente = new char[20];
+          sprintf(claveCliente, "%s:%d", ipFrom, puerto);
 
-        bool clienteEsta = getClienteRecibioTablaMulticast(tablaClientes, claveCliente);
-        std::cout << "__DEBUG ipFrom:" << ipFrom << " puerto:" << puerto << " claveCliente:" << claveCliente << std::endl;
-        std::cout << "(mensajeRcb->esAck):" << (mensajeRcb->esAck) <<  " (mensajeRcb->esMulticast):" << (mensajeRcb->esMulticast) <<  " (mensajeRcb->seq == multicastSeq):" << (mensajeRcb->seq == multicastSeq) << " (clienteEsta):" << (clienteEsta)  << std::endl;
-        if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) &&
-        (mensajeRcb->seq == multicastSeq) && (clienteEsta) && !((*tablaClientes)[claveCliente]) ){
-          std::cout << "__ DEBUG send_multicast encontre un cliente" << std::endl;
-          (*tablaClientes)[claveCliente]=true;
-          ackRecibidosOk++;
+          bool clienteEsta = getClienteRecibioTablaMulticast(tablaClientes, claveCliente);
+          std::cout << "__DEBUG ipFrom:" << ipFrom << " puerto:" << puerto << " claveCliente:" << claveCliente << std::endl;
+          std::cout << "(mensajeRcb->esAck):" << (mensajeRcb->esAck) <<  " (mensajeRcb->esMulticast):" << (mensajeRcb->esMulticast) <<  " (mensajeRcb->seq == multicastSeq):" << (mensajeRcb->seq == multicastSeq) << " (clienteEsta):" << (clienteEsta)  << std::endl;
+          if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) &&
+          (mensajeRcb->seq == multicastSeq) && (clienteEsta) && !((*tablaClientes)[claveCliente]) ){
+            std::cout << "__ DEBUG send_multicast encontre un cliente" << std::endl;
+            (*tablaClientes)[claveCliente]=true;
+            ackRecibidosOk++;
+          }
         }
       }
       if(cantClientes == ackRecibidosOk){
