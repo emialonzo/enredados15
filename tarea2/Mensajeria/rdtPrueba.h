@@ -37,6 +37,7 @@ using namespace std;
 
 typedef map<string, bool> TablaClienteId;
 
+void rdt_limpiarTablasSecuenciaLogout(const char* ipUsuario);
 int CrearSocket(int puerto, bool multicast);
 char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor);
 void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto);

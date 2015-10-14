@@ -29,9 +29,9 @@ using namespace std;
 #define PROMPT ">>>"
 
 #define TTL_CLIENTES 15
-#define MONITOR_TIME 30
+#define MONITOR_TIME 10
 
-#define DEBUG true
+#define DEBUG false
 
 
 typedef struct Cliente {
@@ -246,6 +246,7 @@ int processLogut(char* ip, int puerto) {
         pthread_mutex_lock(&clientesMutex);
         Clientes->erase(ip);
         cantConexiones--;
+        rdt_limpiarTablasSecuenciaLogout(ip);
         pthread_mutex_unlock(&clientesMutex);
         //TODO Ver si se manda un goodbye o no cuando se hace un logout
         //char contenido[MAX_TEXTO] = GOODBYE;
@@ -567,13 +568,15 @@ void* receptorMensajes(void*) {
                          string ip = aBorrar.front();
                          aBorrar.pop();
 
-                         Clientes->erase(ip);
                          //TODO cuando se saca a un cliente se le envia algo. pa mi que no se
-                         //char contenido[MAX_TEXTO];
-                         //strcpy(contenido, GOODBYE);
-                         //Cliente* c  = Clientes->at(ip);
-                         //Mensaje * mensaje = crearMensaje(c->ip, false, contenido);
-                         //encolarMensaje(mensaje);
+                         char contenido[MAX_TEXTO];
+                         strcpy(contenido, GOODBYE);
+                         Cliente* c  = Clientes->at(ip);
+                         Mensaje * mensaje = crearMensaje(c->ip, c->ip, false, contenido);
+                         encolarMensaje(mensaje);
+
+                         Clientes->erase(ip);
+                         rdt_limpiarTablasSecuenciaLogout(ip.c_str());
                  }
                  pthread_mutex_unlock(&clientesMutex);
 
@@ -618,8 +621,8 @@ int main(int argc, char** argv) {
         pthread_t emisorHilo;
         pthread_create(&emisorHilo, NULL, emisorMensajes, NULL);
 
-        //pthread_t monitorHilo;
-        //pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
+        pthread_t monitorHilo;
+        pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
 
         consola();
 

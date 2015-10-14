@@ -45,6 +45,11 @@ TablaSecuencias* emisor = new TablaSecuencias;
 TablaSecuencias* receptor = new TablaSecuencias;
 
 
+void rdt_limpiarTablasSecuenciaLogout(const char* ipUsuario) {
+  emisor->erase(ipUsuario);
+  receptor->erase(ipUsuario);
+}
+
 int CrearSocket(int puerto, bool multicast){
   struct sockaddr_in addr;
   struct ip_mreq mreq;
@@ -184,7 +189,9 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
     if (DEBUG) printMensaje(respuesta);
     addrlen  = sizeof(addr);
     if(DEBUG)  cout << "rdt_recibe Enviando..." << endl ;
+
     int result = sendto(soc, respuesta, sizeof(*respuesta), 0, (struct sockaddr *)&addr, addrlen);
+
     if(DEBUG)  cout << "Nro de seq esperado: " << seqEsperado << endl ;
     if(DEBUG)  cout << "Nro de seq recibido: " << mensaje->seq << endl ;
     if( (result>0) && (seqEsperado == mensaje->seq)){ //(&& result > 0 )
@@ -241,7 +248,6 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
     mensaje->esMulticast=false;
     mensaje->seq = getSequenceNumber(emisor, ip);
 
-    if (DEBUG) cout << "rdt_send enviando...";
     int result = sendto(soc, (char*) mensaje, sizeof(*mensaje), 0, (struct sockaddr *)&addr, addrlen);
 
     if (result >0) {
@@ -251,7 +257,7 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
       bool enviarCorrecto = true;
       struct timeval tv;
-      tv.tv_sec = 10;
+      tv.tv_sec = 2;
       tv.tv_usec = 0;
       if (setsockopt(soc, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
           perror("Error");
@@ -292,9 +298,9 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 int multicastSeq=0;
 void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes){
 
-  cout << "########## estos son los clientes de los que espero un ack ############" << endl;
-  printTablaCliente(tablaClientes);
-  cout << "#######################################################" << endl;
+  if (DEBUG) cout << "########## estos son los clientes de los que espero un ack ############" << endl;
+  if (DEBUG) printTablaCliente(tablaClientes);
+  if (DEBUG) cout << "#######################################################" << endl;
 
   struct sockaddr_in addr;
   int nbytes;
@@ -329,7 +335,10 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
     //cout << "__DEBUG-:RDT sendMulticast, Contendio=>" ;
     if (DEBUG) printMensaje(mensaje);
     cout << "################# ENVIO MENSAJE " << i << " ################" << endl;
+
     int result = sendto(soc, (char*)mensaje, sizeof(*mensaje) , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
+
+    //int result = sendto(soc, (char*)mensaje, sizeof(*mensaje) , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
     //int result = sendto(soc, (char*)prueba , sizeof(char)*MAX_LARGO_MENSAJE , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
 
 
@@ -338,7 +347,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
     if(result >0){ //si se envio el mensaje
       bool enviarCorrecto = true;
       struct timeval tv;
-      tv.tv_sec = 10;
+      tv.tv_sec = 2;
       tv.tv_usec = 0;
       if (setsockopt(soc, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
           perror("Error");
