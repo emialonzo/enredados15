@@ -5,6 +5,8 @@ IP = ifconfig wlan0 | grep 'inet:' | cut -d: -f2 | awk '{print $1}'
 ARCHIVOS = mensaje.cpp  rdtPrueba.cpp
 PUNTOH = mensaje.h  rdtPrueba.h constantes.h
 
+PARAMCLIENTE = DEFAULT 127.0.0.1 54321
+
 
 
 compilar: .servidor .cliente
@@ -22,7 +24,7 @@ ejecutarServidor: .servidor
 	./.servidor
 
 ejecutarCliente: .cliente
-		./.cliente
+		./.cliente $(PARAMCLIENTE)
 
 clear:
 	rm .cliente .servidor

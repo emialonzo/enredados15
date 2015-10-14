@@ -119,20 +119,17 @@ TablaClienteId* getClientesIdForMulticast(){
 
 //Se tiene que llamar con el mutex de clientes ya pedido
 Cliente* getClienteByNick(const char* nick) {
-        Cliente * ret = NULL;
-        map<string, Cliente*>::iterator iter = Clientes->begin();
-        while (iter != Clientes->end()) {
-                ret = iter->second;
-                if (strcmp(ret->nick, nick) == 0) {
-                        return ret;
-                }
-                else {
-                        ret  = NULL;
-                }
-                ++iter;
-        }
+  Cliente * ret = NULL;
+  map<string, Cliente*>::iterator iter = Clientes->begin();
+  while (iter != Clientes->end()) {
+    ret = iter->second;
+    if (strcmp(ret->nick, nick) == 0) {
+      return ret;
+    }
+    ++iter;
+  }
 
-        return ret;
+        return NULL;
 }
 
 
@@ -454,14 +451,16 @@ int consola() {
 
 void* emisorMensajes(void*) {
 
-        while (true) {
-                //mutex_lock
-                pthread_mutex_lock(&queueMutex);
-                if (colaMensajes->empty()) {
-                        //wait_cond
-                        pthread_cond_wait(&emitCond,&queueMutex);
-                        //cout << "Emisor liberado" << endl;
-                }
+  while (true) {
+    //mutex_lock
+    pthread_mutex_lock(&queueMutex);
+    if (colaMensajes->empty()) {
+      //wait_cond
+      cout << "++Servidor Bloqueado:No hay mensajes" << endl;
+      pthread_cond_wait(&emitCond,&queueMutex);
+      cout << "++Servidor Wake" << endl;
+      //cout << "Emisor liberado" << endl;
+    }
 
                 Mensaje * msg = colaMensajes->front();
 
@@ -473,6 +472,9 @@ void* emisorMensajes(void*) {
                 strcpy(rdt_msg->mensaje, msg->msg);
                 strcpy(rdt_msg->source_ip, msg->origen);*/
                 pthread_mutex_lock(&clientesMutex);
+    cout << "++Mensaje desencolado" << endl;
+    cout << "++";
+    printMensaje(msg);
                 if (msg->multicast) {
                         //FIXME esto es de test aca se hce multicast
                         //test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
