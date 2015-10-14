@@ -32,6 +32,7 @@ using namespace std;
 
 #define TTL_CLIENTES 15
 #define MONITOR_TIME 30
+
 #define DEBUG false
 
 
@@ -54,8 +55,10 @@ typedef struct Mensaje {
 } Mensaje;
 
 
+void printMensaje(Mensaje* msg){
+  cout << "msg->destino:" << msg->destino << " msg->dest_puerto:" << msg->dest_puerto << " msg->origen:" << msg->origen << " msg->orig_puerto:" << msg->orig_puerto << " msg->msg:" << msg->msg << " msg->multicast:" << msg->multicast << endl;
 
-
+}
 typedef map<string, Cliente*> MapClientes;
 
 typedef enum  {COM_LOGIN, COM_LOGOUT, COM_GET_CONNECTED, COM_MSG, COM_PVT_MSG, COM_INVALID} MsgComand;
