@@ -62,7 +62,7 @@ void * receptorMensajes(void*) {
   int contCon = 0;
   while (!meVoy) {
     char* result;
-    char param[100];
+    
     //recibo y parseo mensaje, se bloquea hasta que recibe un mensaje
     cout << "--Espero por mensaje..." << endl;
     comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);

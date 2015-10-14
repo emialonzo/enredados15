@@ -20,8 +20,6 @@ using namespace std;
 //#include "rdt.h"
 #include "constantes.h"
 
-//FIXME esto es para probar tiene que volar
-//#include "rdt_test.h"
 
 #define RELAYED_MESSAGE "RELAYED_MESSAGE"
 #define PRIVATE_MESSAGE "PRIVATE_MESSAGE"
@@ -75,7 +73,7 @@ ColaMensajes* colaMensajes = new ColaMensajes;
 char* ipServidor ;//= IP_SERVIDOR;
 int  puertoServidor = PUERTO_SERVIDOR;
 
-char* ipMulticast(IP_MULTICAST);//= IP_MULTICAST;
+char* ipMulticast ;//= IP_MULTICAST;
 int puertoMulticast = PUERTO_MULTICAST;
 
 pthread_mutex_t queueMutex;
@@ -106,6 +104,7 @@ Cliente* getCliente(char* ip){
                 return NULL;
         }
 }
+
 
 TablaClienteId* getClientesIdForMulticast(){
   TablaClienteId* tabla = new TablaClienteId;
@@ -600,6 +599,8 @@ int main(int argc, char** argv) {
         char* ipServidor = new char[MAX_IP_LENGTH];
         strcpy(ipServidor, IP_SERVIDOR);
 
+        char* ipMulticast = new char[MAX_IP_LENGTH];
+        strcpy(ipMulticast, IP_MULTICAST);
 
         //FIXME aca no tengo claro que pasarle.
         if (DEBUG) std::cout << "socEmisor:" ;
