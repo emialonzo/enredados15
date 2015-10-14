@@ -31,7 +31,7 @@ using namespace std;
 #define TTL_CLIENTES 15
 #define MONITOR_TIME 30
 
-#define DEBUG false
+#define DEBUG true
 
 
 typedef struct Cliente {
@@ -596,10 +596,10 @@ int main(int argc, char** argv) {
 
         init();
 
-        char* ipServidor = new char[MAX_IP_LENGTH];
+        ipServidor = new char[MAX_IP_LENGTH];
         strcpy(ipServidor, IP_SERVIDOR);
 
-        char* ipMulticast = new char[MAX_IP_LENGTH];
+        ipMulticast = new char[MAX_IP_LENGTH];
         strcpy(ipMulticast, IP_MULTICAST);
 
         //FIXME aca no tengo claro que pasarle.

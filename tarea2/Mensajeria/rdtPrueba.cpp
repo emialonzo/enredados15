@@ -291,11 +291,11 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
 int multicastSeq=0;
 void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes){
-  
+
   cout << "########## estos son los clientes de los que espero un ack ############" << endl;
   printTablaCliente(tablaClientes);
   cout << "#######################################################" << endl;
-  
+
   struct sockaddr_in addr;
   int nbytes;
   socklen_t addrlen = sizeof(struct sockaddr_in);
