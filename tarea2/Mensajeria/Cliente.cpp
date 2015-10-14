@@ -44,10 +44,6 @@ using namespace std;
 #define MAX_TEXTO 160
 #define MAX_NICK 20
 
-// #define CR "\n"
-// const char* TestCommands[] = {CONNECTED, RELAYED_MESSAGE, PRIVATE_MESSAGE, RELAYED_MESSAGE, "Wednesday", RELAYED_MESSAGE, PRIVATE_MESSAGE, GOODBYE};
-// const int NumberTest = 8;
-
 //variables globales
 char* apodo;
 char* IPservidor;
@@ -59,51 +55,52 @@ bool meVoy;
 
 void * receptorMensajes(void*) {
   printf("Empiezo a recibir mensajes\n");
-
   char* comando;
   char* ipEmisor;
   int puertoEmisor;
   int i = 0;
+  int contCon = 0;
   while (!meVoy) {
-
-    comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
-    printf("Mensaje (%d) de %s:%d recibido :: %s ::\n", i, ipEmisor, puertoEmisor, comando);
     char* result;
-
+    char param[100];
     //recibo y parseo mensaje, se bloquea hasta que recibe un mensaje
     cout << "--Espero por mensaje..." << endl;
     comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
-    printf("--Mensaje (%d) recibido :: %s ::!!\n", i, comando);
-    printf("--Origen del mensaje: %s:%d", ipEmisor, puertoEmisor);
-    if (strcmp(comando, RELAYED_MESSAGE) == 0) {
-      cout << "Mensaje multicast: " << comando << endl;
-      // result = strtok(comando," ");
-      // result = strtok(comando," ");
-      // cout << "Comando: " << result[0] << endl;
-      // cout << "Emisor: " << result[1] << endl;
-      // cout << "Mensaje: " << result[2] << endl;
-      // printf("Mensaje de %s: %s", result[1],result[2]);
-    } else if (strcmp(comando, PRIVATE_MESSAGE) == 0) {
-      cout << "Mensaje privado: " << comando << endl;
-      //obtenego emisor
-      //obtengo mensaje
-      //modifico estructoruas
-    } else if (strcmp(comando, CONNECTED) == 0) {
-      cout << "Conectados: " << comando << endl;
+    printf("--Mensaje (%d) recibido :: %s ::\n", i, comando);
+    printf("--Origen del mensaje: %s:%d\n", ipEmisor, puertoEmisor);
+    string cmd = comando;
+    if (cmd.find(RELAYED_MESSAGE) == 0) {
+      cout << "Mensaje multicast: " << endl;
+      result = strtok(comando," ");
+      result = strtok(NULL," ");
+      cout << "\tEmisor: " << result << endl;
+      result = strtok(NULL,"\n");
+      cout << "\tMensaje: " << result << endl;
+    } else if (cmd.find(PRIVATE_MESSAGE) == 0) {
+      cout << "Mensaje privado: " << endl;
+      result = strtok(comando," ");
+      result = strtok(NULL," ");
+      cout << "\tEmisor: " << result << endl;
+      result = strtok(NULL,"\n");
+      cout << "\tMensaje: " << result << endl;
+    } else if (cmd.find(CONNECTED) == 0) {
       result = strtok(comando, " ");
-      printf("Comando recibido: %s\nLos usuarios conectados se listan a continuación:\n", result);
-      result = strtok(comando, "|");
+      printf("Usuarios conectados:\n");
+      result = strtok(NULL, "|");
+      contCon=0;
       while (result != NULL) {
-        printf("%s\n", result);
+        printf("\t%d)%s\n", contCon++, result);
         result = strtok(NULL, "|");
       }
-    } else if (strcmp(comando, GOODBYE) == 0) {
-      printf("Me desconectaron: %s (dejo la memoria colgada y nos beisbol)\n",comando);
+    } else if (cmd.find( GOODBYE) == 0) {
+      printf("Me desconectaron: %s\n",comando);
+      //FIXME
       meVoy = true;
+    } else{
+      printf("Comando <%s> no reconocido.", comando);
     }
     i++;
   }
-
   return NULL;
 }
 
@@ -112,8 +109,9 @@ void mensajeria() {
   // Hilo 1: para recivir los mensajes de los clientes, rdt_rcv();
   pthread_t idHilo;
   pthread_create(&idHilo, NULL, receptorMensajes, NULL);
-  sleep(4);
-  printf("Empiezo a enviar comandos\n");
+
+  sleep(1);
+  printf("++Empiezo a enviar comandos\n");
 
   // Hilo 2: para enviar comandos al servidor rdt_send();
   //inicializo
@@ -199,10 +197,9 @@ int main(int argc, char** argv) {
   strcat(login, apodo);
   strcat(login, CR);
 
+
   printf("Mensaje de logueo: %s\n", login);
-
   rdt_sendto(socketComandos, login, IPservidor, puertoServidor);
-
   printf("Su nombre de usuario es: %s y su servidor es %s:%d\n", apodo, IPservidor,puertoServidor);
   meVoy = false;
   // Empiezo a enviar y recibir mensajes (hasta LOGOUT)

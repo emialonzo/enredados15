@@ -54,7 +54,7 @@ int CrearSocket(int puerto, bool multicast){
     perror("No se pudo crear el socket");
     exit(0);
   }
-  if (DEBUG) cout << "CrearSocket=> puerto:" << puerto << ", multicast:" << multicast << endl;
+  cout << "CrearSocket=> puerto:" << puerto << ", multicast:" << multicast << endl;
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port = htons(puerto);
@@ -103,7 +103,7 @@ void printTablaCliente(TablaClienteId* tabla){
 
 bool getClienteRecibioTablaMulticast(TablaClienteId* tabla, char* clienteId){
   printTablaCliente(tabla);
-  cout << "__DEBUG getClienteRecibioTablaMulticast(" << clienteId << ")" << endl;
+  if(DEBUG) cout << "__DEBUG getClienteRecibioTablaMulticast(" << clienteId << ")" << endl;
   TablaClienteId::iterator it = tabla->find(clienteId);
   if(it == tabla->end()){
     return false;
@@ -302,7 +302,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
   addr_multicast.sin_port = htons(puerto_multicast);
   addr_multicast.sin_addr.s_addr = inet_addr(ip_multicast.c_str());
 
-  cout << "__DEBUG:rdtSendMulticast:inicializando estructuras" << ip_multicast << ":" << puerto_multicast << endl;
+  if(DEBUG) cout << "__DEBUG:rdtSendMulticast:inicializando estructuras" << ip_multicast << ":" << puerto_multicast << endl;
   //armo mensaje a enviar
   rdtMsj* mensaje = new rdtMsj;
   rdtMsj* mensajeRcb = new rdtMsj;
@@ -321,7 +321,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
   while(true){
     i++;
     //envio mensaje a multicast
-    cout << "__DEBUG-:RDT sendMulticast, Contendio=>" ;
+    if(DEBUG) cout << "__DEBUG-:RDT sendMulticast, Contendio=>" ;
     if (DEBUG) printMensaje(mensaje);
     cout << "################# ENVIO MENSAJE " << i << " ################" << endl;
     int result = sendto(soc, (char*)mensaje, sizeof(*mensaje) , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
@@ -341,14 +341,14 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
       while ((cantClientes>ackRecibidosOk) && (enviarCorrecto )) {
         memset(mensajeRcb , 0, sizeof(*mensajeRcb));
         memset(&addr, 0, sizeof(struct sockaddr_in));
-        cout << "__DEBUG espero ack" << endl;
+        if(DEBUG) cout << "__DEBUG espero ack" << endl;
         if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
           perror("SALTO ESE TIMER");
           enviarCorrecto = false;
           //sleep(100);
         }
         if (enviarCorrecto) {
-          cout << "__DEBUG-:RDT send muticas, RECIBI=>" ;
+          if(DEBUG) cout << "__DEBUG-:RDT send muticas, RECIBI=>" ;
           if (DEBUG) printMensaje(mensajeRcb);
 
           char* ipFrom = inet_ntoa(addr.sin_addr);
@@ -357,8 +357,8 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
           sprintf(claveCliente, "%s:%d", ipFrom, puerto);
 
           bool clienteEsta = getClienteRecibioTablaMulticast(tablaClientes, claveCliente);
-          std::cout << "__DEBUG ipFrom:" << ipFrom << " puerto:" << puerto << " claveCliente:" << claveCliente << std::endl;
-          std::cout << "(mensajeRcb->esAck):" << (mensajeRcb->esAck) <<  " (mensajeRcb->esMulticast):" << (mensajeRcb->esMulticast) <<  " (mensajeRcb->seq == multicastSeq):" << (mensajeRcb->seq == multicastSeq) << " (clienteEsta):" << (clienteEsta)  << std::endl;
+          if(DEBUG) std::cout << "__DEBUG ipFrom:" << ipFrom << " puerto:" << puerto << " claveCliente:" << claveCliente << std::endl;
+          if(DEBUG) std::cout << "(mensajeRcb->esAck):" << (mensajeRcb->esAck) <<  " (mensajeRcb->esMulticast):" << (mensajeRcb->esMulticast) <<  " (mensajeRcb->seq == multicastSeq):" << (mensajeRcb->seq == multicastSeq) << " (clienteEsta):" << (clienteEsta)  << std::endl;
           if((mensajeRcb->esAck) && (mensajeRcb->esMulticast) &&
           (mensajeRcb->seq == multicastSeq) && (clienteEsta) && !((*tablaClientes)[claveCliente]) ){
             std::cout << "__ DEBUG send_multicast encontre un cliente" << std::endl;
