@@ -8,6 +8,8 @@
 #ifndef RDTPRUEBA_H
 #define	RDTPRUEBA_H
 
+#define CANT_INTENTOS_REENVIO 5
+
 #include "constantes.h"
 #include <map>
 #include <string.h>
@@ -39,9 +41,10 @@ typedef map<string, bool> TablaClienteId;
 
 void rdt_limpiarTablasSecuenciaLogout(const char* ipUsuario);
 int CrearSocket(int puerto, bool multicast);
+void rdt_cerrarSocket(int sock);
 char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor);
-void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto);
-void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes);
+int rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto);
+int rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes);
 
 // void iniRdt();
 // char* recibir();

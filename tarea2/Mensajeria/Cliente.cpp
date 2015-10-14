@@ -93,7 +93,7 @@ void * receptorMensajes(void*) {
         result = strtok(NULL, "|");
       }
     } else if (cmd.find( GOODBYE) == 0) {
-      printf("Me desconectaron: %s\n",comando);
+      printf("Usted ha sido desconectado: %s\n",comando);
       //FIXME
       meVoy = true;
     } else{
@@ -153,8 +153,11 @@ void mensajeria() {
     // si no hubo error envio el mensaje al servidor
     if (!error) {
       cout << "++Enviando:::" << mensaje << ":::" << endl;
-      rdt_sendto(socketComandos, mensaje, IPservidor, puertoServidor);
-      cout << "++Mensaje Enviado " << endl;
+      if (rdt_sendto(socketComandos, mensaje, IPservidor, puertoServidor) < 0) {
+        cout << "El mensaje no pudo ser enviado, intentelo nuevamente." << endl;
+      } else {
+        cout << "++Mensaje Enviado " << endl;
+      }
     } else {
       cout << "comando no reconocido" << endl;
     }
@@ -199,13 +202,16 @@ int main(int argc, char** argv) {
 
 
   printf("Mensaje de logueo: %s\n", login);
-  rdt_sendto(socketComandos, login, IPservidor, puertoServidor);
+  if (rdt_sendto(socketComandos, login, IPservidor, puertoServidor) < 0) {
+    cout << "No se pudo iniciar sesion." << endl;
+    exit(0);
+  };
   printf("Su nombre de usuario es: %s y su servidor es %s:%d\n", apodo, IPservidor,puertoServidor);
   meVoy = false;
   // Empiezo a enviar y recibir mensajes (hasta LOGOUT)
   mensajeria();
-  //rdt_cerrarSocket(socketComandos);
-  //rdt_cerrarSocket(socketMensajes);
+  rdt_cerrarSocket(socketComandos);
+  rdt_cerrarSocket(socketMensajes);
 
   return 0;
 }

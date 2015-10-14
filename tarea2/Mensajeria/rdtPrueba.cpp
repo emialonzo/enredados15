@@ -86,6 +86,10 @@ int CrearSocket(int puerto, bool multicast){
   return sockete;
 }
 
+void rdt_cerrarSocket(int sock) {
+  close(sock);
+}
+
 char* getClienteId(char* ip, int puerto){
   return NULL;
 }
@@ -221,17 +225,18 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
 
 }
 
-void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
+int rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
   if (DEBUG) cout << "rdt_sendto=> mensaje: " << mensajeToSend << " ip:" << ip << " puerto:" << puerto;
 
   int nbytes;
+  int cantIntentos = 0;
   socklen_t addrlen;
   struct sockaddr_in addr;
 
   int seqEsperado = getSequenceNumber(emisor, ip);
 
-  while(true){
+  while(cantIntentos < CANT_INTENTOS_REENVIO){
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(puerto);
@@ -265,9 +270,9 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
       if(DEBUG) cout << "rdt_send espero ACK con seq:" << seqEsperado << endl;
       if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
-        perror("SALTO ESE TIMER");
+        perror("Se perdio el mensaje o el ACK, reenvio el mensaje.");
         enviarCorrecto = false;
-        //sleep(100);
+        cantIntentos++;
       }
 
       if (enviarCorrecto) {
@@ -281,7 +286,7 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
           //mismo ip
           updateSequenceNumber(emisor, ip, (++seqEsperado)%2);
           printf("DEBUG::Mensaje enviado: %s\n", mensaje->mensaje);
-          return ;
+          return result;
         }
         else{
           printf("rdt_send Error:");
@@ -291,12 +296,12 @@ void rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
     }
 
   }
-
+  return -1;
 }
 
 
 int multicastSeq=0;
-void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes){
+int rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClientes){
 
   if (DEBUG) cout << "########## estos son los clientes de los que espero un ack ############" << endl;
   if (DEBUG) printTablaCliente(tablaClientes);
@@ -304,6 +309,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
 
   struct sockaddr_in addr;
   int nbytes;
+  int cantIntentos = 0;
   socklen_t addrlen = sizeof(struct sockaddr_in);
 
   //armo direccion del multicast
@@ -329,7 +335,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
   strcpy(prueba, "MESSAGE Debug multicast");
 
   int i = 0;
-  while(true){
+  while(cantIntentos < CANT_INTENTOS_REENVIO){
     i++;
     //envio mensaje a multicast
     //cout << "__DEBUG-:RDT sendMulticast, Contendio=>" ;
@@ -359,6 +365,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
         if ((nbytes = recvfrom(soc, (char*) mensajeRcb, sizeof(*mensajeRcb), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
           perror("SALTO ESE TIMER");
           enviarCorrecto = false;
+          cantIntentos++;
           //sleep(100);
         }
         if (enviarCorrecto) {
@@ -369,7 +376,8 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
           int puerto=ntohs(addr.sin_port);
           char* claveCliente = new char[20];
           sprintf(claveCliente, "%s:%d", ipFrom, puerto);
-	  if(DEBUG) cout << "me llego un ack de: " << claveCliente << endl;
+
+          if(DEBUG) cout << "me llego un ack de: " << claveCliente << endl;
 
           bool clienteEsta = getClienteRecibioTablaMulticast(tablaClientes, claveCliente);
           if (DEBUG) cout << "__DEBUG ipFrom:" << ipFrom << " puerto:" << puerto << " claveCliente:" << claveCliente << endl;
@@ -386,7 +394,7 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
         //Todos los clientes confiramaron la recepcion del mensaje
         multicastSeq = (multicastSeq+1) % 2;
         printf("Mensaje multicast enviado\n");
-        return;
+        return result;
       }
     }
     else{//FIXME
@@ -394,8 +402,10 @@ void rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClien
       sleep(3);
     }
   }
-  delete(mensaje);
-  delete(mensajeRcb);
+  //FIXME revisar
+  // delete(mensaje);
+  // delete(mensajeRcb);
+  return -1;
 }
 
 // //debria recibir como parametro ademas del mensaje

@@ -28,11 +28,10 @@ using namespace std;
 
 #define PROMPT ">>>"
 
-#define TTL_CLIENTES 15
-#define MONITOR_TIME 10
+#define TTL_CLIENTES 300
+#define MONITOR_TIME 100
 
 #define DEBUG false
-
 
 typedef struct Cliente {
         char nick[50];
@@ -459,41 +458,41 @@ void* emisorMensajes(void*) {
     pthread_mutex_lock(&queueMutex);
     if (colaMensajes->empty()) {
       //wait_cond
-      cout << "++Servidor Bloqueado:No hay mensajes" << endl;
+      if(DEBUG) cout << "++Servidor Bloqueado:No hay mensajes" << endl;
       pthread_cond_wait(&emitCond,&queueMutex);
-      cout << "++Servidor Wake" << endl;
+      if(DEBUG) cout << "++Servidor Wake" << endl;
       //cout << "Emisor liberado" << endl;
     }
+    Mensaje * msg = colaMensajes->front();
 
-                Mensaje * msg = colaMensajes->front();
+    colaMensajes->pop();
+    //mutex_unlock
+    pthread_mutex_unlock(&queueMutex);
 
-                colaMensajes->pop();
-                //mutex_unlock
-                pthread_mutex_unlock(&queueMutex);
+    /*appMsg* rdt_msg = new appMsg();
+    strcpy(rdt_msg->mensaje, msg->msg);
+    strcpy(rdt_msg->source_ip, msg->origen);*/
+    pthread_mutex_lock(&clientesMutex);
+    if(DEBUG) cout << "++Mensaje desencolado" << endl;
+    if(DEBUG) cout << "++";
+    if(DEBUG) printMensaje(msg);
+    if (msg->multicast) {
+      //FIXME esto es de test aca se hce multicast
+      //test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+      rdt_send_multicast(socEmisor, msg->msg, getClientesIdForMulticast());
+    } else {
+      //FIXME esto es de test aca se hace unicast
+      //test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
+      if (rdt_sendto(socEmisor, msg->msg, msg->destino, msg->dest_puerto) <0) {
 
-                /*appMsg* rdt_msg = new appMsg();
-                strcpy(rdt_msg->mensaje, msg->msg);
-                strcpy(rdt_msg->source_ip, msg->origen);*/
-                pthread_mutex_lock(&clientesMutex);
-    cout << "++Mensaje desencolado" << endl;
-    cout << "++";
-    printMensaje(msg);
-                if (msg->multicast) {
-                        //FIXME esto es de test aca se hce multicast
-                        //test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
-                        rdt_send_multicast(socEmisor, msg->msg, getClientesIdForMulticast());
-                }
-                else {
-                        //FIXME esto es de test aca se hace unicast
-                        //test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
-                        rdt_sendto(socEmisor, msg->msg, msg->destino, msg->dest_puerto);
-                }
-                pthread_mutex_unlock(&clientesMutex);
-                cantMensajes++;
-                printMensajeEnviado(msg);
-                delete(msg);
-        }
-        return NULL;
+      }
+    }
+    pthread_mutex_unlock(&clientesMutex);
+    cantMensajes++;
+    if(DEBUG) printMensajeEnviado(msg);
+    delete(msg);
+  }
+  return NULL;
 }
 
 
@@ -625,6 +624,8 @@ int main(int argc, char** argv) {
         pthread_create(&monitorHilo, NULL, monitorClientes, NULL);
 
         consola();
+        rdt_cerrarSocket(socEmisor);
+        rdt_cerrarSocket(socReceptor);
 
         return 0;
 }
