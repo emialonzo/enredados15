@@ -16,7 +16,7 @@
 
 using namespace std;
 
-#define DEBUG false
+#define DEBUG true
 
 //global vars
 string usuario(USUARIO);
@@ -335,6 +335,8 @@ int rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClient
   strcpy(prueba, "MESSAGE Debug multicast");
 
   int i = 0;
+  int cantClientes=tablaClientes->size();
+  int ackRecibidosOk=0;
   while(cantIntentos < CANT_INTENTOS_REENVIO){
     i++;
     //envio mensaje a multicast
@@ -348,8 +350,7 @@ int rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClient
     //int result = sendto(soc, (char*)prueba , sizeof(char)*MAX_LARGO_MENSAJE , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
 
 
-    int cantClientes=tablaClientes->size();
-    int ackRecibidosOk=0;
+    
     if(result >0){ //si se envio el mensaje
       bool enviarCorrecto = true;
       struct timeval tv;
