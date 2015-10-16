@@ -1,0 +1,5 @@
+#!/bin/bash
+make compilar
+dir=`ifconfig wlan0 | awk '/Direc. inet/{print substr($2,6)}'`
+
+./.cliente $1 $dir 54321
