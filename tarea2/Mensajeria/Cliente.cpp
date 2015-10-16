@@ -28,6 +28,8 @@ using namespace std;
 #define CONNECTED "CONNECTED"
 #define GOODBYE "GOODBYE"
 
+#define DEBUG false
+
 // mensajes del cliente al servidor
 #define LOGIN "LOGIN"
 #define LOGOUT "LOGOUT"
@@ -54,7 +56,8 @@ int socketComandos;
 bool meVoy;
 
 void * receptorMensajes(void*) {
-  printf("Empiezo a recibir mensajes\n");
+
+  if (DEBUG) printf("Empiezo a recibir mensajes\n");
   char* comando;
   char* ipEmisor;
   int puertoEmisor;
@@ -64,26 +67,31 @@ void * receptorMensajes(void*) {
     char* result;
 
     //recibo y parseo mensaje, se bloquea hasta que recibe un mensaje
-    cout << "--Espero por mensaje..." << endl;
+    if (DEBUG) cout << "--Espero por mensaje..." << endl;
     comando = rdt_recibe(socketMensajes, ipEmisor, puertoEmisor);
-    printf("--Mensaje (%d) recibido :: %s ::\n", i, comando);
-    printf("--Origen del mensaje: %s:%d\n", ipEmisor, puertoEmisor);
+    if (DEBUG) printf("--Mensaje (%d) recibido :: %s ::\n", i, comando);
+    if (DEBUG) printf("--Origen del mensaje: %s:%d\n", ipEmisor, puertoEmisor);
     string cmd = comando;
     if (cmd.find(RELAYED_MESSAGE) == 0) {
+      cout << "\033[1;31m";
       cout << "Mensaje multicast: " << endl;
       result = strtok(comando," ");
       result = strtok(NULL," ");
       cout << "\tEmisor: " << result << endl;
       result = strtok(NULL,"\n");
       cout << "\tMensaje: " << result << endl;
+      cout << "\033[0m" << endl;
     } else if (cmd.find(PRIVATE_MESSAGE) == 0) {
+      cout << "\033[1;31m";
       cout << "Mensaje privado: " << endl;
       result = strtok(comando," ");
       result = strtok(NULL," ");
       cout << "\tEmisor: " << result << endl;
       result = strtok(NULL,"\n");
       cout << "\tMensaje: " << result << endl;
+      cout << "\033[0m" << endl;
     } else if (cmd.find(CONNECTED) == 0) {
+      cout << "\033[1;31m";
       result = strtok(comando, " ");
       printf("Usuarios conectados:\n");
       result = strtok(NULL, "|");
@@ -92,11 +100,14 @@ void * receptorMensajes(void*) {
         printf("\t%d)%s\n", contCon++, result);
         result = strtok(NULL, "|");
       }
+      cout << "\033[0m" << endl;
     } else if (cmd.find( GOODBYE) == 0) {
+      cout << "\033[1;31m";
       printf("Usted ha sido desconectado: %s\n",comando);
+      cout << "\033[0m" << endl;
       //FIXME
       meVoy = true;
-    } else{
+    } else {
       printf("Comando <%s> no reconocido.", comando);
     }
     i++;
@@ -111,7 +122,7 @@ void mensajeria() {
   pthread_create(&idHilo, NULL, receptorMensajes, NULL);
 
   sleep(1);
-  printf("++Empiezo a enviar comandos\n");
+  if (DEBUG) printf("++Empiezo a enviar comandos\n");
 
   // Hilo 2: para enviar comandos al servidor rdt_send();
   //inicializo

@@ -139,7 +139,7 @@ void updateSequenceNumber(TablaSecuencias* tabla, char* ip, int num){
 
 int multicastSeqEsp=-1;
 char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
-  cout << "############## rdt_recibe inicio #################### " << endl;
+  if (DEBUG) cout << "############## rdt_recibe inicio #################### " << endl;
 
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
@@ -217,7 +217,7 @@ char* rdt_recibe(int soc, char*& ipEmisor, int& puertoEmisor){
       char* retMen = new char[MSGBUFSIZE];
       strcpy(retMen, mensaje->mensaje);
 
-      cout << "############## rdt_recibe fin #################### " << endl;
+      if (DEBUG) cout << "############## rdt_recibe fin #################### " << endl;
       return retMen;
     }
 
