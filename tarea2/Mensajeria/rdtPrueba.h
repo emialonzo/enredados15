@@ -8,7 +8,8 @@
 #ifndef RDTPRUEBA_H
 #define	RDTPRUEBA_H
 
-#define CANT_INTENTOS_REENVIO 5
+#define CANT_INTENTOS_REENVIO 15
+#define TIMEOUT 5
 
 #include "constantes.h"
 #include <map>

@@ -28,7 +28,7 @@ using namespace std;
 
 #define PROMPT ">>>"
 
-#define TTL_CLIENTES 60
+#define TTL_CLIENTES 300
 #define MONITOR_TIME 30
 
 #define DEBUG false

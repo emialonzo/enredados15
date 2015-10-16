@@ -262,7 +262,7 @@ int rdt_sendto(int soc, char* mensajeToSend, char* ip, int puerto){
 
       bool enviarCorrecto = true;
       struct timeval tv;
-      tv.tv_sec = 2;
+      tv.tv_sec = TIMEOUT;
       tv.tv_usec = 0;
       if (setsockopt(soc, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
           perror("Error");
@@ -353,7 +353,7 @@ int rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClient
     if(result >0){ //si se envio el mensaje
       bool enviarCorrecto = true;
       struct timeval tv;
-      tv.tv_sec = 2;
+      tv.tv_sec = TIMEOUT;
       tv.tv_usec = 0;
       if (setsockopt(soc, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
           perror("Error");
