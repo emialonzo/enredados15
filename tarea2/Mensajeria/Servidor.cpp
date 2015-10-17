@@ -135,7 +135,7 @@ Cliente* getClienteByNick(const char* nick) {
 
 
 
-Mensaje* crearMensaje(char* ipDestino, char* ipOrigen, bool multicast, char* contenido) {
+Mensaje* crearMensaje(char* ipDestino, char* ipOrigen, int puertoOrigen, bool multicast, char* contenido) {
 
         Mensaje* ret = new Mensaje();
         strcpy(ret->origen, ipOrigen);
@@ -143,6 +143,7 @@ Mensaje* crearMensaje(char* ipDestino, char* ipOrigen, bool multicast, char* con
         strcpy(ret->destino, ipDestino);
 
         ret->dest_puerto = puertoMulticast;
+        ret->orig_puerto = puertoOrigen;
         ret->multicast = multicast;
 
         return ret;
@@ -214,7 +215,7 @@ int processGetConnectedMsg(char* ip, int puerto) {
     cli->ult_actividad = time(0);
     sprintf(contenido, "%s %s", CONNECTED, getConected());
     pthread_mutex_unlock(&clientesMutex);
-    Mensaje* mensaje = crearMensaje(ip, ip, false, contenido);
+    Mensaje* mensaje = crearMensaje(ip, ip, puerto, false, contenido);
     encolarMensaje(mensaje);
     return 0;
   }
@@ -259,7 +260,7 @@ int processLogut(char* ip, int puerto) {
         return 0;
 }
 
-int processMulticastMessage(char* sourceIp, char* recv_msg) {
+int processMulticastMessage(char* sourceIp, int sourcePort, char* recv_msg) {
         pthread_mutex_lock(&clientesMutex);
         map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
 
@@ -273,7 +274,7 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
                 char contenido[MAX_TEXTO];
                 sprintf(contenido, "%s %s %s", RELAYED_MESSAGE, cli->nick, str_contenido.c_str());
 
-                Mensaje* mensaje = crearMensaje(ipMulticast, sourceIp,true, contenido);
+                Mensaje* mensaje = crearMensaje(ipMulticast, sourceIp, sourcePort,true, contenido);
                 encolarMensaje(mensaje);
                 return 0;
 
@@ -282,7 +283,7 @@ int processMulticastMessage(char* sourceIp, char* recv_msg) {
         return -1;
 }
 
-int processPrivatetMessage(char* sourceIp, char* recv_msg) {
+int processPrivatetMessage(char* sourceIp, int sourcePort, char* recv_msg) {
 
         pthread_mutex_lock(&clientesMutex);
         map<string, Cliente*>::iterator iter = Clientes->find(sourceIp);
@@ -306,7 +307,7 @@ int processPrivatetMessage(char* sourceIp, char* recv_msg) {
 
                         char contenido[MAX_TEXTO];
                         sprintf(contenido, "%s %s %s", PRIVATE_MESSAGE, cli->nick, str_recv_msg.c_str());
-                        Mensaje* mensaje = crearMensaje(dest_cli->ip, sourceIp, false, contenido);
+                        Mensaje* mensaje = crearMensaje(dest_cli->ip, sourceIp, sourcePort, false, contenido);
                         encolarMensaje(mensaje);
 
                         return 0;
@@ -526,11 +527,11 @@ void* receptorMensajes(void*) {
                                 break;
                         case COM_MSG:
                                 sprintf(strComandoAux, "**%s(%d)=>%s", "COM_MSG", COM_MSG, msg);
-                                processMulticastMessage(ipEmisor, msg);
+                                processMulticastMessage(ipEmisor, puertoEmisor, msg);
                                 break;
                         case COM_PVT_MSG:
                                 sprintf(strComandoAux, "**%s(%d)=>%s", "login", COM_PVT_MSG, msg);
-                                processPrivatetMessage(ipEmisor, msg);
+                                processPrivatetMessage(ipEmisor, puertoEmisor, msg);
                                 break;
                         case COM_LOGOUT:
                                 sprintf(strComandoAux, "**%s(%d)=>%s", "COM_LOGOUT", COM_LOGOUT, msg);
@@ -577,7 +578,7 @@ void* receptorMensajes(void*) {
                          char contenido[MAX_TEXTO];
                          strcpy(contenido, GOODBYE);
                          Cliente* c  = Clientes->at(ip);
-                         Mensaje * mensaje = crearMensaje(c->ip, c->ip, false, contenido);
+                         Mensaje * mensaje = crearMensaje(c->ip, c->ip, c->puerto, false, contenido);
                          encolarMensaje(mensaje);
 
                          Clientes->erase(ip);
