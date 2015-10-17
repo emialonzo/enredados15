@@ -350,7 +350,7 @@ int rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClient
     //int result = sendto(soc, (char*)prueba , sizeof(char)*MAX_LARGO_MENSAJE , 0, (struct sockaddr *)&addr_multicast, sizeof(addr_multicast));
 
 
-    
+
     if(result >0){ //si se envio el mensaje
       bool enviarCorrecto = true;
       struct timeval tv;
@@ -403,6 +403,7 @@ int rdt_send_multicast(int soc, char* mensajeToSend, TablaClienteId* tablaClient
       sleep(3);
     }
   }
+  //TODO Ver bien que hacer con el nro de secuencia si actualizar o no
   //FIXME revisar
   // delete(mensaje);
   // delete(mensajeRcb);

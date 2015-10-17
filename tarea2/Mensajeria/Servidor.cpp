@@ -148,10 +148,14 @@ Mensaje* crearMensaje(char* ipDestino, char* ipOrigen, bool multicast, char* con
         return ret;
 }
 
-void printMensajeEnviado(Mensaje* msg){
+void printMensajeEnviado(Mensaje* msg, bool error){
+        if (error) {
+                cout << "\033[1;31m";
+        }
         const char* separator = "****************************************";
+        const char* header = error ? "ERROR ENVIANDO MENSAJE" : "MENSAJE ENVIADO";
         cout << endl << separator << endl;
-        cout << "MENSAJE ENVIADO" << endl;
+        cout << header << endl;
         cout << "Origen: "<< msg->origen << ":" << msg->orig_puerto << endl;
         cout << "Destino: "<< msg->destino << ":" << msg->dest_puerto << endl;
         cout << "Tipo: ";
@@ -165,8 +169,9 @@ void printMensajeEnviado(Mensaje* msg){
         //cout << endl << "Tipo: " << msg->multicast ? "MULTICAST" : "UNICAST" << endl;
         cout << endl << "CONTENIDO" << endl;
         cout << msg->msg << endl;
-        cout << separator << endl << PROMPT;
-        //cout << "msg->destino:" << msg->destino << " msg->dest_puerto:" << msg->dest_puerto << " msg->origen:" << msg->origen << " msg->orig_puerto:" << msg->orig_puerto << " msg->msg:" << msg->msg << " msg->multicast:" << msg->multicast << endl;
+        cout << separator << endl;
+        cout << "\033[0m" << endl;
+        cout << PROMPT;
 }
 
 void encolarMensaje(Mensaje* mensaje) {
@@ -476,20 +481,21 @@ void* emisorMensajes(void*) {
     if(DEBUG) cout << "++Mensaje desencolado" << endl;
     if(DEBUG) cout << "++";
     if(DEBUG) printMensaje(msg);
-    if (msg->multicast) {
-      //FIXME esto es de test aca se hce multicast
-      //test_rdt_send_broadcast(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
-      rdt_send_multicast(socEmisor, msg->msg, getClientesIdForMulticast());
-    } else {
-      //FIXME esto es de test aca se hace unicast
-      //test_rdt_send(socEmisor, rdt_msg, msg->destino, msg->dest_puerto);
-      if (rdt_sendto(socEmisor, msg->msg, msg->destino, msg->dest_puerto) <0) {
+    bool error = false;
 
-      }
+    if (msg->multicast) {
+            pthread_mutex_unlock(&clientesMutex);
+            TablaClienteId* receptores = getClientesIdForMulticast();
+            error = rdt_send_multicast(socEmisor, msg->msg, receptores) < 0;
     }
-    pthread_mutex_unlock(&clientesMutex);
+    else {
+            pthread_mutex_unlock(&clientesMutex);
+            error = rdt_sendto(socEmisor, msg->msg, msg->destino, msg->dest_puerto) < 0;
+    }
+
+
+    printMensajeEnviado(msg, error);
     cantMensajes++;
-    if(DEBUG) printMensajeEnviado(msg);
     delete(msg);
   }
   return NULL;
