@@ -12,6 +12,6 @@ $TTL	0     ; do not cache, so that we can appreciate
 ;
 @		IN	NS	ns.redes2015.net.
 ns	IN	A	10.0.0.3
+ns	IN	A	10.0.0.4
 
 www	IN	A	10.0.0.6
-
