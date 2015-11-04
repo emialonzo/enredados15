@@ -10,7 +10,7 @@ $TTL	0     ; do not cache, so that we can appreciate
 			2419200		; Expire
 			 604800 )	; Negative Cache TTL
 ;
-@		IN	NS	ns.redes2015.net.
+@		IN	NS	ns2.redes2015.net.
 ns	IN	A	10.0.0.4
 
 www	IN	A	10.0.0.6
