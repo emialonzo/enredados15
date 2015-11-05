@@ -1,2 +1,2 @@
-ifconfig eth0 10.0.0.4 netmask 255.255.255.0 up
+ifconfig eth0 10.0.0.4 netmask 255.255.255.0 broadcast 10.0.0.255 up
 /etc/init.d/apache2 start
