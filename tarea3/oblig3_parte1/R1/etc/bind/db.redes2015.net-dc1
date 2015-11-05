@@ -11,6 +11,6 @@ $TTL	0     ; do not cache, so that we can appreciate
 			 604800 )	; Negative Cache TTL
 ;
 @		IN	NS	ns1.redes2015.net.
-ns1	IN	A	10.0.0.3
+ns1	IN	A	100.0.0.3
 
-www	IN	A	10.0.0.5
+www	IN	A	100.0.0.5
