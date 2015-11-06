@@ -1,0 +1,10 @@
+ifconfig eth0 up
+ifconfig eth1 up
+ifconfig eth2 up
+ifconfig eth3 up
+
+ifconfig etho hw ether 00:00:00:00:22:00
+ifconfig eth1 hw ether 00:00:00:00:22:01
+ifconfig eth2 hw ether 00:00:00:00:22:02
+ifconfig eth3 hw ether 00:00:00:00:22:03
+
