@@ -8,3 +8,30 @@ ifconfig eth1 hw ether 00:00:00:00:12:01
 ifconfig eth2 hw ether 00:00:00:00:12:02
 ifconfig eth3 hw ether 00:00:00:00:12:03
 
+modprobe 8021q
+
+vconfig add eth1 10
+vconfig add eth2 10
+
+vconfig add eth1 20
+vconfig add eth2 20
+
+ifconfig eth1.10 up
+ifconfig eth2.10 up
+
+ifconfig eth1.20 up
+ifconfig eth2.20 up
+
+brctl addbr br10
+brctl addif br10 eth1.10
+brctl addif br10 eth2.10
+brctl stp br10 on
+ifconfig br10 up
+
+brctl addbr br20
+brctl addif br20 eth0
+brctl addif br20 eth1.20
+brctl addif br20 eth2.20
+brctl addif br20 eth3
+brctl stp br20 on
+ifconfig br20 up
