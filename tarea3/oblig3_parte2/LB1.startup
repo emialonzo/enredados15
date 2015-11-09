@@ -6,6 +6,8 @@ ifconfig eth1 hw ether 00:00:00:00:00:06
 
 iptables --table nat --append POSTROUTING --source 100.0.0.0/24 --destination 10.0.0.0/24 --jump MASQUERADE
 
+iptables --table nat --append POSTROUTING --source 192.168.0.0/16 --destination 10.0.0.0/24 --jump MASQUERADE
+
 iptables --table nat --append PREROUTING --destination 100.0.0.5 --match statistic --mode nth --every 2 --jump DNAT --to-destination 10.0.0.1
 
 iptables --table nat --append PREROUTING --destination 100.0.0.5 --jump DNAT --to-destination 10.0.0.2
