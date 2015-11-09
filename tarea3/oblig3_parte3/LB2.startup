@@ -1,5 +1,5 @@
 ifconfig eth0 up
-ifconfig etho hw ether 00:00:00:00:00:02
+ifconfig eth0 hw ether 00:00:00:00:00:07
 
 modprobe 8021q
 
@@ -11,8 +11,6 @@ ifconfig eth0.20 10.0.0.6 netmask 255.255.255.0 broadcast 10.0.0.255 up
 
 iptables --table nat --append POSTROUTING --source 100.0.0.0/24 --destination 10.0.0.0/24 --jump MASQUERADE
 
-iptables --table nat --append PREROUTING --destination 100.0.0.6 --match statistic --mode nth --every 2 --jump DNAT --to-destination 10.0.0.4
+iptables --table nat --append PREROUTING --destination 100.0.0.6 --match statistic --mode nth --every 2 --jump DNAT --to-destination 10.0.0.3
 
-iptables --table nat --append PREROUTING --destination 100.0.0.6 --jump DNAT --to-destination 10.0.0.3
-
-echo "watch 'iptables -t nat -vnL'" >> /root/.bashrc
+iptables --table nat --append PREROUTING --destination 100.0.0.6 --jump DNAT --to-destination 10.0.0.4

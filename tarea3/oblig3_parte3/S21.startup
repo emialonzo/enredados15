@@ -1,2 +1,3 @@
 ifconfig eth0 10.0.0.3 netmask 255.255.255.0 broadcast 10.0.0.255 up
+ifconfig eth0 hw ether 00:00:00:00:00:21
 /etc/init.d/apache2 start
