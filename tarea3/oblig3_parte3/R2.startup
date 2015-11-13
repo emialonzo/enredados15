@@ -1,5 +1,8 @@
 ifconfig eth0 100.0.0.4 netmask 255.255.255.0 broadcast 100.0.0.255 up
 ifconfig eth0 hw ether 00:00:00:00:00:03
+
 ifconfig eth1 100.1.0.9 netmask 255.255.255.252 broadcast 100.1.0.11 up
 ifconfig eth1 hw ether 00:00:00:00:00:04
+
 /etc/init.d/bind start
+/etc/init.d/zebra start

@@ -3,10 +3,10 @@ ifconfig eth1 up
 ifconfig eth2 up
 ifconfig eth3 up
 
-ifconfig etho hw ether 00:00:00:00:12:00
-ifconfig eth1 hw ether 00:00:00:00:12:01
-ifconfig eth2 hw ether 00:00:00:00:12:02
-ifconfig eth3 hw ether 00:00:00:00:12:03
+ifconfig eth0 hw ether 00:00:00:00:12:01
+ifconfig eth1 hw ether 00:00:00:00:12:02
+ifconfig eth2 hw ether 00:00:00:00:12:03
+ifconfig eth3 hw ether 00:00:00:00:12:04
 
 modprobe 8021q
 
