@@ -1,0 +1,7 @@
+# LB2
+zebra=yes
+bgpd=no
+ospfd=no
+ospf6d=no
+ripd=yes
+ripngd=no

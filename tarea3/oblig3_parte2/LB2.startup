@@ -12,4 +12,5 @@ iptables --table nat --append PREROUTING --destination 100.0.0.6 --match statist
 
 iptables --table nat --append PREROUTING --destination 100.0.0.6 --jump DNAT --to-destination 10.0.0.3
 
-route add default gw 100.0.0.4
+
+/etc/init.d/zebra start
