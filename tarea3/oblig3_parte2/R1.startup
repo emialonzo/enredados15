@@ -6,3 +6,5 @@ ifconfig eth1 hw ether 00:00:00:00:00:02
 
 /etc/init.d/bind start
 /etc/init.d/zebra start
+
+route add default gw 100.1.0.6
