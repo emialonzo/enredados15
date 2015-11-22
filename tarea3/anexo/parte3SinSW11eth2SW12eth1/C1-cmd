@@ -1,0 +1,50 @@
+C1 login: root (automatic login)
+C1:~# wget -qO- www.redes2015.net
+<html>
+<body>
+
+<b>Llegaste al servidor S11</b>
+
+</body>
+</html>
+C1:~# 
+C1:~# wget -qO- www.redes2015.net
+<html>
+<body>
+
+<b>Llegaste al servidor S12</b>
+
+</body>
+</html>
+C1:~# wget -qO- www.redes2015.net
+<html>
+<body>
+
+<b>Llegaste al servidor S11</b>
+
+</body>
+</html>
+C1:~# wget -qO- www.redes2015.net
+<html>
+<body>
+
+<b>Llegaste al servidor S12</b>
+
+</body>
+</html>
+C1:~# wget -qO- www.redes2015.net
+<html>
+<body>
+
+<b>Llegaste al servidor S22</b>
+
+</body>
+</html>
+C1:~# wget -qO- www.redes2015.net
+<html>
+<body>
+
+<b>Llegaste al servidor S21</b>
+
+</body>
+</html>
